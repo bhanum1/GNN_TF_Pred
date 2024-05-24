@@ -1,0 +1,16 @@
+
+# train a chemprop model
+chemprop train --config-path (PATH to config file for training model) \
+	--epochs (specify epochs if desired)
+
+
+# get fingerprints from a chemprop model
+chemprop fingerprint --test-path (Path to css file containing only SMILES column) \
+   --model-path (Path to model, typically the best.pt file generated via chemprop) \
+   --ffn-block-index (Num of feed forward layers to use, typically 0) \
+
+
+# Hyper parameter optimization
+chemprop hpopt  --config-path (PATH to hpopt config file)
+    --raytune-num-samples (num trials) \
+    --hyperopt-n-initial-points (num initial points)

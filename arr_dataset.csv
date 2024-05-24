@@ -1,0 +1,51 @@
+﻿Name,smiles,A,EaR
+"1,1-Dichloro ethane",CC(Cl)Cl,-3.958092126,951.1742735
+"1,1-Dichloro-2,2-difluoro ethane",FC(F)C(Cl)Cl,-4.290543507,1158.615174
+"1,1-Di-m-tolyl ethane",CC(c1cccc(C)c1)c2cccc(C)c2,-5.816135931,2946.021758
+"1,2 Dibromo propane",CC(Br)CBr,-3.874211021,1276.198151
+"1,2,3,4-Tetrahydro-5,8-dimethyl-1-octyl naphthalene",CCCCCCCCC1CCCc2c(C)ccc(C)c12,-8.613167741,3545.60694
+"1,2,3,4-Tetrahydro-6-butyl-7-hexyl naphthalene",CCCCCCc1cc2CCCCc2cc1CCCC,-10.55846929,4112.324811
+"1,2-Dibromo ethylene",BrC=CBr,-3.343086353,968.6529509
+"1,3-Butadiene",C=CC=C,-5.297044696,989.1628946
+"1,3-Cyclohexadiene",C1CC=CC=C1,-4.330159055,1121.064789
+"1,3-Dichloro benzene",Clc1cccc(Cl)c1,-3.732626125,1119.362497
+"1,4-Dichloro benzene",Clc1ccc(Cl)cc1,-3.778181704,1152.342842
+"1,4-Difluorobenzene",Fc1ccc(F)cc1,-3.992091701,1039.999149
+"1,4-Dimethyl-5-octyl decahydro naphthalene",CCCCCCCCC1CCCC2C(C)CCC(C)C12,-9.638467507,3721.494071
+1-Bromopropane,CCCBr,-3.756407341,906.8604135
+1-Butanol,CCCCO,-6.843978411,2320.517312
+1-Decanol,CCCCCCCCCCO,-8.541030278,3273.207896
+1-Fluoro-2-nitrobenzene,[O-][N+](=O)c1ccccc1F,-4.656538028,1651.529101
+1-Heptanol,CCCCCCCO,-8.682921159,3116.180702
+1-Heptene,CCCCCC=C,-3.910056334,840.1136197
+1-Iodopropane,CCCI,-3.636417976,977.5345674
+1-Methoxy propane,CCCOC,-4.161271749,814.626024
+1-Nonanol,CCCCCCCCCO,-8.0405448,3066.408557
+1-Octanethiol,CCCCCCCCS,-4.445716566,1395.041791
+1-Pentanol,CCCCCO,-6.812258485,2381.07522
+1-Propanol,CCCO,-6.704230988,2199.972341
+"1,2 Diamino propane",CC(N)CN,-7.395159795,2345.401954
+"1,2,3,4-Tetrahydro-7-butyl-1-hexyl naphthalene",CCCCCCC1CCCc2ccc(CCCC)cc12,-9.960702929,3838.946303
+"1,2-Dichloro ethane",ClCCCl,-4.148466963,1162.734138
+1-Chloropropane,CCCCl,-3.984030569,861.4427848
+1-Fluoropentane,CCCCCF,-4.150996123,926.8696509
+1-(Isocyanato-1-methylethyl)-3-(1-ethylethenyl) benzene,CCC(=C)c1cccc(c1)C(C)(C)N=C=O,-5.040763297,1839.105777
+1-(Isocyanato-1-methylethyl)-4-(1-ethylethenyl) benzene,CCC(=C)c1ccc(cc1)C(C)(C)N=C=O,-5.053487549,1911.885811
+"1,2-Dibromo ethane",BrCCBr,-3.904184406,1302.565557
+"1,2-Dibromo-2-methyl propane",CC(C)(Br)CBr,-4.098175498,1410.737069
+"1,2-Dichloro benzene",Clc1ccccc1Cl,-3.767455831,1194.646971
+"1,2-Dichloro tetrafluoro ethane",FC(F)(Cl)C(F)(F)Cl,-4.113115104,924.659528
+"1,3-Difluoro benzene",Fc1cccc(F)c1,-3.956667562,998.3631135
+"1,3-Dimethoxy benzene",COc1cccc(OC)c1,-4.578932018,1567.370103
+"1,3-Dinitrobenzene",[O-][N+](=O)c1cccc(c1)[N+]([O-])=O,-4.956622678,2262.568601
+"1,4-Dimethoxy benzene",COc1ccc(OC)cc1,-4.448501292,1505.243686
+1-Bromo-2-methyl propane,CC(C)CBr,-4.001599204,1041.921641
+1-Chloro-2-methyl propane,CC(C)CCl,-4.208918187,1003.539757
+1-Chlorodifluoro ethane,CC(F)(F)Cl,-3.33776256,644.7222352
+1-Fluoro-4-nitrobenzene,[O-][N+](=O)c1ccc(F)cc1,-4.958013107,1748.088445
+1-Hexanethiol,CCCCCCS,-4.115541078,1150.900897
+1-Hexyne,CCCCC#C,-4.539013771,1041.685795
+1-Iodo-2-methyl propane,CC(C)CI,-3.821264908,1080.605005
+1-Nonanethiol,CCCCCCCCCS,-4.488184962,1471.179927
+1-Octanol,CCCCCCCCO,-6.452648762,2511.230412
+1-Pentene,CCCC=C,-4.00313831,705.1482405

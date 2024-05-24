@@ -1,0 +1,7 @@
+X_d_transform: null
+batch_norm: true
+final_lr: 2.74e-06
+init_lr: 1.2e-07
+max_lr: 0.0009835
+metrics: null
+warmup_epochs: 2

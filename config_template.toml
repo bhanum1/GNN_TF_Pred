@@ -1,0 +1,48 @@
+
+# PATH variables
+config-path = PATH to config file
+data-path = PATH to data file
+output-dir = PATH to directory where you want to output data
+
+# Data column names
+target-columns = [Name of target column in data file]
+smiles-columns = [Name of smiles column in data file]
+
+# Data splitting stuff
+split = RANDOM
+split-sizes = [0.8, 0.1, 0.1]
+split-key-molecule = 0
+num-folds = 1
+data-seed = 0
+
+
+# Don't change (most are just default values for parameters I'm not using)
+accelerator = cpu  (or gpu if available)
+task-type = regression
+num-workers = 0
+devices = auto
+rxn-mode = REAC_DIFF
+multi-hot-atom-featurizer-mode = V2
+frzn-ffn-layers = 0
+ensemble-size = 1
+multiclass-num-classes = 3
+v-kl = 0.0
+eps = 1e-08
+
+
+
+# Hyperparameters (Currently set to defaults)
+activation = RELU
+aggregation = mean
+aggregation-norm = 100
+ffn-num-layers = 1
+warmup-epochs = 2
+batch-size = 64
+message-hidden-dim = 300
+depth = 3
+dropout = 0.0
+ffn-hidden-dim = 300
+init-lr = 0.0001
+max-lr = 0.001
+final-lr = 0.0001
+epochs = 50
