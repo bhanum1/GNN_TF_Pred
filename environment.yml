@@ -4,39 +4,39 @@ channels:
   - defaults
   - conda-forge
 dependencies:
-  - bzip2=1.0.8=h80987f9_6
-  - c-ares=1.19.1=h80987f9_0
-  - ca-certificates=2024.3.11=hca03da5_0
-  - curl=8.7.1=h02f6b3c_0
-  - expat=2.6.2=h313beb8_0
-  - gdbm=1.18=h8fe7016_4
-  - gettext=0.21.0=h13f89a0_1
-  - git=2.40.1=pl5340h6cf2078_1
-  - icu=73.1=h313beb8_0
-  - krb5=1.20.1=hf3e1bf2_1
-  - libcurl=8.7.1=h3e2b118_0
-  - libcxx=14.0.6=h848a8c0_0
-  - libedit=3.1.20230828=h80987f9_0
-  - libev=4.33=h1a28f6b_1
-  - libffi=3.4.4=hca03da5_1
-  - libiconv=1.16=h80987f9_3
-  - libnghttp2=1.57.0=h62f6fdd_0
-  - libssh2=1.11.0=h3e2b118_0
-  - libxml2=2.10.4=h0b34f26_2
-  - llvm-openmp=14.0.6=hc6e5704_0
-  - ncurses=6.4=h313beb8_0
-  - openssl=3.0.13=h1a28f6b_2
-  - pcre2=10.42=hb066dcc_1
-  - perl=5.34.0=h1a28f6b_2
-  - pip=24.0=py311hca03da5_0
-  - python=3.11.9=hb885b13_0
-  - readline=8.2=h1a28f6b_0
-  - setuptools=69.5.1=py311hca03da5_0
-  - sqlite=3.45.3=h80987f9_0
-  - tk=8.6.14=h6ba3021_0
-  - wheel=0.43.0=py311hca03da5_0
-  - xz=5.4.6=h80987f9_1
-  - zlib=1.2.13=h18a0788_1
+  - bzip2=1.0.8
+  - c-ares=1.19.1
+  - ca-certificates=2024.3.11
+  - curl=8.7.1
+  - expat=2.6.2
+  - gdbm=1.18
+  - gettext=0.21.0
+  - git=2.40.1
+  - icu=73.1
+  - krb5=1.20.1
+  - libcurl=8.7.1
+  - libcxx=14.0.6
+  - libedit=3.1.20230828
+  - libev=4.33
+  - libffi=3.4.4
+  - libiconv=1.16
+  - libnghttp2=1.57.0
+  - libssh2=1.11.0
+  - libxml2=2.10.4
+  - llvm-openmp=14.0.6
+  - ncurses=6.4
+  - openssl=3.0.13
+  - pcre2=10.42
+  - perl=5.34.0
+  - pip=24.0
+  - python=3.11.9
+  - readline=8.2
+  - setuptools=69.5.1
+  - sqlite=3.45.3
+  - tk=8.6.14
+  - wheel=0.43.0
+  - xz=5.4.6
+  - zlib=1.2.13
   - pip:
       - aimsim-core==2.2.1
       - aiohttp==3.9.5
