@@ -26,9 +26,9 @@ final-lr = 0.0001
 epochs = 50
 
 # GPU/CPU and other training stuff
-accelerator = gpu
+accelerator = cuda
 num-workers = 10
-devices = auto
+devices = -1
 ensemble-size = 1
 raytune-num-workers = 1
 raytune-use-gpu = True
