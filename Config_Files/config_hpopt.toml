@@ -28,7 +28,7 @@ epochs = 50
 # GPU/CPU and other training stuff
 accelerator = cuda
 num-workers = 4
-devices = -1
+devices = auto
 ensemble-size = 1
 raytune-num-workers = 1
 raytune-use-gpu = True
