@@ -3,9 +3,11 @@ config-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Config_F
 data-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Datasets/viscosity_data.csv
 output-dir = /home/bhanu/Documents/Chemprop_Models/
 
+#hpopt stuff
 raytune-num-samples = 100
 hyperopt-n-initial-points = 50
 hpopt-save-dir = /home/bhanu/Documents/Chemprop_Models/hpopt
+search-parameter-keywords = basic
 
 # Hyperparameters
 activation = RELU
@@ -14,21 +16,22 @@ aggregation-norm = 100
 ffn-num-layers = 3
 warmup-epochs = 2
 batch-size = 64
-message-hidden-dim = 1200
+message-hidden-dim = 300
 depth = 3
 dropout = 0.5
-ffn-hidden-dim = 1200
+ffn-hidden-dim = 300
 init-lr = 0.0001
 max-lr = 0.001
 final-lr = 0.0001
-epochs = 200
+epochs = 50
 
 # GPU/CPU and other training stuff
 accelerator = gpu
 num-workers = 7
 devices = auto
 ensemble-size = 1
-
+raytune-num-workers = 7
+raytune-use-gpu = True
 
 
 # Don't Change
