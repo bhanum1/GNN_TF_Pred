@@ -1,7 +1,7 @@
 # PATH Variables
-config-path = /PATH/TO/config.toml
-data-path = /PATH/TO/viscosity_data.csv
-output-dir = /PATH/TO/OUTPUT/DIR/
+config-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Config_Files/config.toml
+data-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Datasets/viscosity_data.csv
+output-dir = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Config_Files/Models/
 
 # Hyperparameters
 activation = RELU
