@@ -7,7 +7,7 @@ output-dir = /home/bhanu/Documents/Chemprop_Models/
 raytune-num-samples = 100
 hyperopt-n-initial-points = 50
 hpopt-save-dir = /home/bhanu/Documents/Chemprop_Models/hpopt
-search-parameter-keywords = basic
+search-parameter-keywords = learning_rate
 
 # Hyperparameters
 activation = RELU
