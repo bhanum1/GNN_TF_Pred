@@ -50,5 +50,3 @@ frzn-ffn-layers = 0
 multiclass-num-classes = 3
 v-kl = 0.0
 eps = 1e-08
-
-
