@@ -31,7 +31,7 @@ num-workers = 4
 devices = auto
 ensemble-size = 1
 raytune-num-workers = 1
-raytune-use-gpu = True
+raytune-use-gpu = False
 
 
 # Don't Change
