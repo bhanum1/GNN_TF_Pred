@@ -4,10 +4,10 @@ data-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Datasets/v
 output-dir = /home/bhanu/Documents/Chemprop_Models/
 
 #hpopt stuff
-raytune-num-samples = 100
-hyperopt-n-initial-points = 50
+raytune-num-samples = 10
+hyperopt-n-initial-points = 5
 hpopt-save-dir = /home/bhanu/Documents/Chemprop_Models/hpopt
-search-parameter-keywords = learning_rate
+search-parameter-keywords = basic
 
 # Hyperparameters
 activation = RELU
