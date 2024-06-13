@@ -4,20 +4,20 @@ data-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Datasets/c
 output-dir = /home/bhanu/Documents/Chemprop_Models/
 
 # Hyperparameters
-activation = SELU
-aggregation = sum
-aggregation-norm = 150
+activation = RELU
+aggregation = mean
+aggregation-norm = 100
 ffn-num-layers = 1
-warmup-epochs = 1
-batch-size = 32
-message-hidden-dim = 1700
+warmup-epochs = 2
+batch-size = 64
+message-hidden-dim = 300
 depth = 3
 dropout = 0.0
-ffn-hidden-dim = 1700
-init-lr = 0.0000336
-max-lr = 0.000672
-final-lr = 0.0006
-epochs = 10
+ffn-hidden-dim = 300
+init-lr = 0.0001
+max-lr = 0.001
+final-lr = 0.0001
+epochs = 5
 
 # GPU/CPU and other training stuff
 accelerator = gpu
