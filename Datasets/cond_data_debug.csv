@@ -1,4 +1,4 @@
-smiles,Conductivity,temperature,splits
+smiles,Viscosity,temperature,splits
 CCCOC(=O)C(C)=C,-1.826015815,0.005319149,train
 CCCOC(=O)C(C)=C,-1.942192268,0.003869595,train
 CCCOC(=O)C(C)=C,-2.07366184,0.0030409,train

@@ -29,7 +29,7 @@ ensemble-size = 1
 
 
 # Don't Change
-target-columns = [Conductivity]
+target-columns = [Viscosity]
 smiles-columns = [smiles]
 splits-column = splits
 split = RANDOM
