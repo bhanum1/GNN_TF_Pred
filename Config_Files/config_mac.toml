@@ -1,6 +1,6 @@
 # PATH Variables
 config-path = /Users/bhanumamillapalli/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Config_Files/config_mac.toml
-data-path = /Users/bhanumamillapalli/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Datasets/cond_data_debug.csv
+data-path = /Users/bhanumamillapalli/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Datasets/viscosity_data_debug.csv
 output-dir = /Users/bhanumamillapalli/Documents/Chemprop_Models/
 
 # Hyperparameters
@@ -28,7 +28,7 @@ ensemble-size = 1
 
 
 # Don't Change
-target-columns = [Conductivity]
+target-columns = [Viscosity]
 smiles-columns = [smiles]
 splits-column = splits
 split = RANDOM
