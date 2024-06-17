@@ -20,8 +20,8 @@ final-lr = 0.0006
 epochs = 5
 
 # GPU/CPU and other training stuff
-accelerator = gpu
-num-workers = 7
+accelerator = cpue
+num-workers = 1
 devices = auto
 ensemble-size = 1
 
