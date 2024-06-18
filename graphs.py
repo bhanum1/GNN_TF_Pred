@@ -52,7 +52,7 @@ if parity_plot:
         plt.text(
         min(truths[i]),
         max(truths[i]),
-        f"Corr = {scipy.stats.spearmanr(truths[i][:], preds[i][:])[0]:.3f}",
+        f"SRCC = {scipy.stats.spearmanr(truths[i][:], preds[i][:])[0]:.3f}",
         )
         plt.show()
 
