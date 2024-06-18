@@ -35,7 +35,7 @@ raytune-use-gpu = True
 
 
 # Don't Change
-target-columns = [vapour_pressure]
+target-columns = [vapor_pressure]
 smiles-columns = [smiles]
 splits-column = splits
 split = RANDOM
