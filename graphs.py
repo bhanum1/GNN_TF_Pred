@@ -20,7 +20,7 @@ plt.style.use("Solarize_Light2")
 
 if parity_plot:
     # Read the csv
-    df = pd.read_csv(PATH + "_parity.csv")
+    df = pd.read_csv(PATH + "parity.csv")
 
     T1_truths = df['T1_true']
     T1_preds = df['T1_pred']
