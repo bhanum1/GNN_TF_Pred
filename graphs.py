@@ -7,8 +7,8 @@ import scipy.stats
 import math
 
 # Which graphs to make
-parity_plot = False
-training_curve = True
+parity_plot = True
+training_curve = False
 
 
 
@@ -20,25 +20,22 @@ plt.style.use("Solarize_Light2")
 
 if parity_plot:
     # Read the csv
-    df = pd.read_csv(PATH + "parity.csv")
+    df = pd.read_csv(PATH + "_parity.csv")
 
-    truths = df['viscosity_true']
-    preds = df['viscosity_pred']
+    T1_truths = df['T1_true']
+    T1_preds = df['T1_pred']
 
-    T1_truths = truths[:55]
-    T1_preds = preds[:55]
+    T2_truths = df['T2_true']
+    T2_preds = df['T2_pred']
 
-    T2_truths = truths[55:110]
-    T2_preds = preds[55:110]
+    T3_truths = df['T3_true']
+    T3_preds = df['T3_pred']
 
-    T3_truths = truths[110:165]
-    T3_preds = preds[110:165]
+    T4_truths = df['T4_true']
+    T4_preds = df['T4_pred']
 
-    T4_truths = truths[165:220]
-    T4_preds = preds[165:220]
-
-    T5_truths = truths[220:275]
-    T5_preds = preds[220:275]
+    T5_truths = df['T5_true']
+    T5_preds = df['T5_pred']
 
     truths = [T1_truths, T2_truths, T3_truths, T4_truths, T5_truths]
     preds = [T1_preds, T2_preds, T3_preds, T4_preds, T5_preds]
