@@ -9,7 +9,7 @@ import math
 # Which graphs to make
 parity_plot = True
 training_curve = False
-quantity = "conductivity"
+quantity = "vapor_pressure"
 
 
 # Add PATH here
