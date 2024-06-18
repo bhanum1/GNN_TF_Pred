@@ -9,18 +9,18 @@ import math
 # Which graphs to make
 parity_plot = True
 training_curve = False
-
+quantity = "conductivity"
 
 
 # Add PATH here
-PATH = '/Users/bhanumamillapalli/Desktop/'
+PATH = '/home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Graph_Data/'
 
 # Plot style
 plt.style.use("Solarize_Light2")
 
 if parity_plot:
     # Read the csv
-    df = pd.read_csv(PATH + "parity.csv")
+    df = pd.read_csv(PATH + quantity + "/parity.csv")
 
     T1_truths = df['T1_true']
     T1_preds = df['T1_pred']
