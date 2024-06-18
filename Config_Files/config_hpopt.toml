@@ -1,11 +1,11 @@
 # PATH Variables
 config-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Config_Files/config_hpopt.toml
-data-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Datasets/vapour_pressure_data.csv
+data-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Datasets/viscosity_arr_data.csv
 output-dir = /home/bhanu/Documents/Chemprop_Models/
 
 #hpopt stuff
-raytune-num-samples = 120
-hyperopt-n-initial-points = 60
+raytune-num-samples = 1200
+hyperopt-n-initial-points = 600
 hpopt-save-dir = /home/bhanu/Documents/Chemprop_Models/hpopt
 search-parameter-keywords = all
 
@@ -35,7 +35,7 @@ raytune-use-gpu = True
 
 
 # Don't Change
-target-columns = [vapor_pressure]
+target-columns = [Viscosity]
 smiles-columns = [smiles]
 splits-column = splits
 split = RANDOM
