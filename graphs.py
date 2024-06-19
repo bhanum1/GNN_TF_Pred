@@ -45,7 +45,7 @@ if parity_plot:
         max(preds[i]),
         f"SRCC = {scipy.stats.spearmanr(truths[i][:], preds[i][:])[0]:.3f}, MSE = {MSE:.3f}",
         )
-        plt.savefig("parity_" + str(columns[i]) + ".png")
+        plt.savefig(quantity + "/parity_" + str(columns[i]) + ".png")
         plt.show()
 
 if training_curve:
