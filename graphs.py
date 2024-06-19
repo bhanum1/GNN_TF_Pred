@@ -42,7 +42,7 @@ if parity_plot:
         MSE = np.square(np.subtract(truths[i],preds[i])).mean() 
         plt.text(
         min(truths[i]),
-        max(truths[i]),
+        max(preds[i]),
         f"SRCC = {scipy.stats.spearmanr(truths[i][:], preds[i][:])[0]:.3f}, MSE = {MSE:.3f}",
         )
         plt.savefig("parity_" + str(columns[i]) + ".png")
