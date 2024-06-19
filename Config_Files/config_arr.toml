@@ -17,7 +17,7 @@ ffn-hidden-dim = 600
 init-lr = 0.00010287
 max-lr = 0.0010235
 final-lr = 0.0000230707
-epochs = 50
+epochs = 500
 
 # GPU/CPU and other training stuff
 accelerator = gpu
