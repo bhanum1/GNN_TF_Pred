@@ -14,8 +14,8 @@ message-hidden-dim = 2400
 depth = 4
 dropout = 0.0
 ffn-hidden-dim = 600
-init-lr = 0.00010287
-max-lr = 0.0010235
+init-lr = 0.000010287
+max-lr = 0.00010235
 final-lr = 0.0000230707
 epochs = 500
 
