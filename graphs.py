@@ -11,7 +11,7 @@ parity_plot = True
 training_curve = False
 quantity = "vapor_pressure_arr"
 
-columns = ['T1', 'T2', 'T3', 'T4', 'T5']
+columns = ['T1', 'T2', 'T3', 'T4', 'T5', 'lnA', 'EaR']
 # Add PATH here
 PATH = '/home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Graph_Data/'
 
@@ -45,6 +45,7 @@ if parity_plot:
         max(truths[i]),
         f"SRCC = {scipy.stats.spearmanr(truths[i][:], preds[i][:])[0]:.3f}, MSE = {MSE:.3f}",
         )
+        plt.savefig("parity_" + str(columns[i]) + ".png")
         plt.show()
 
 if training_curve:
@@ -83,3 +84,4 @@ if training_curve:
     plt.ylabel("Loss")
     plt.title("Training Curve")
     plt.show()
+   
