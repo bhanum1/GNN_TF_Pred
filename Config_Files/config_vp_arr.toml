@@ -28,7 +28,7 @@ ensemble-size = 1
 
 
 # Don't Change
-target-columns = [EaR]
+target-columns = [lnA]
 smiles-columns = [smiles]
 split = RANDOM
 split-sizes = [0.8, 0.1, 0.1]
