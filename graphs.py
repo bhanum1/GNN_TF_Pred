@@ -9,9 +9,9 @@ import math
 # Which graphs to make
 parity_plot = True
 training_curve = False
-quantity = "vapor_pressure"
+quantity = "vapor_pressure_arr"
 
-
+columns = ['T1', 'T2', 'T3', 'T4', 'T5']
 # Add PATH here
 PATH = '/home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Graph_Data/'
 
@@ -21,38 +21,29 @@ plt.style.use("Solarize_Light2")
 if parity_plot:
     # Read the csv
     df = pd.read_csv(PATH + quantity + "/parity.csv")
+    
+    truths, preds = [], []
+    for column in columns:
+        true_col = df[column + '_true']
+        pred_col = df[column + '_pred']
 
-    T1_truths = df['T1_true']
-    T1_preds = df['T1_pred']
+        truths.append(true_col)
+        preds.append(pred_col)
 
-    T2_truths = df['T2_true']
-    T2_preds = df['T2_pred']
-
-    T3_truths = df['T3_true']
-    T3_preds = df['T3_pred']
-
-    T4_truths = df['T4_true']
-    T4_preds = df['T4_pred']
-
-    T5_truths = df['T5_true']
-    T5_preds = df['T5_pred']
-
-    truths = [T1_truths, T2_truths, T3_truths, T4_truths, T5_truths]
-    preds = [T1_preds, T2_preds, T3_preds, T4_preds, T5_preds]
-
-    for i in range(5):
+    for i in range(len(truths)):
         #parity plot
         plt.figure()
         plt.plot(truths[i],truths[i],"xkcd:dusty pink")
         plt.plot(truths[i],preds[i], "xkcd:wine", linestyle = '', marker = '.')
-        plt.title("Parity Plot for Temp " + str(i+1))
+        plt.title("Parity Plot for " + str(columns[i]))
 
         plt.xlabel("True Value")
         plt.ylabel("Predicted Value")
+        MSE = np.square(np.subtract(truths[i],preds[i])).mean() 
         plt.text(
         min(truths[i]),
         max(truths[i]),
-        f"SRCC = {scipy.stats.spearmanr(truths[i][:], preds[i][:])[0]:.3f}",
+        f"SRCC = {scipy.stats.spearmanr(truths[i][:], preds[i][:])[0]:.3f}, MSE = {MSE:.3f}",
         )
         plt.show()
 
