@@ -9,9 +9,9 @@ import math
 # Which graphs to make
 parity_plot = True
 training_curve = False
-quantity = "vapor_pressure_arr"
+quantity = "vapor_pressure"
 
-columns = ['T1', 'T2', 'T3', 'T4', 'T5', 'lnA', 'EaR']
+columns = ['T1', 'T2', 'T3', 'T4', 'T5']
 # Add PATH here
 PATH = '/home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Graph_Data/'
 
