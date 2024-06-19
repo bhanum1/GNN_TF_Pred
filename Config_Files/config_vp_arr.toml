@@ -10,10 +10,10 @@ aggregation-norm = 100
 ffn-num-layers = 1
 warmup-epochs = 1
 batch-size = 64
-message-hidden-dim = 300
+message-hidden-dim = 32
 depth = 3
 dropout = 0.3
-ffn-hidden-dim = 300
+ffn-hidden-dim = 32
 init-lr = 0.0001
 max-lr = 0.001
 final-lr = 0.0001
@@ -28,7 +28,7 @@ ensemble-size = 1
 
 
 # Don't Change
-target-columns = [lnA]
+target-columns = [EaR]
 smiles-columns = [smiles]
 split = RANDOM
 split-sizes = [0.8, 0.1, 0.1]
