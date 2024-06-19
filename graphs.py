@@ -24,8 +24,8 @@ if parity_plot:
     
     truths, preds = [], []
     for column in columns:
-        true_col = df[column + '_true']
-        pred_col = df[column + '_pred']
+        true_col = df[column + '_true'].dropna()
+        pred_col = df[column + '_pred'].dropna()
 
         truths.append(true_col)
         preds.append(pred_col)
