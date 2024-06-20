@@ -6,20 +6,20 @@ model-frzn = /home/bhanu/Documents/Chemprop_Models/Best_Models/viscosity/best.pt
 
 
 # Hyperparameters
-activation = SELU
+activation = ELU
 aggregation = sum
-aggregation-norm = 150
-ffn-num-layers = 1
-warmup-epochs = 1
-batch-size = 32
-message-hidden-dim = 1700
-depth = 3
+aggregation-norm = 59
+ffn-num-layers = 2
+warmup-epochs = 8
+batch-size = 128
+message-hidden-dim = 2300
+depth = 2
 dropout = 0.0
-ffn-hidden-dim = 1700
-init-lr = 0.0000336
-max-lr = 0.000672
-final-lr = 0.0006
-epochs = 100
+ffn-hidden-dim = 500
+init-lr = 0.00001632
+max-lr = 0.00042856
+final-lr = 0.000005124
+epochs = 500
 frzn-ffn-layers = 0
 
 # GPU/CPU and other training stuff
