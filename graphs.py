@@ -65,7 +65,7 @@ if training_curve:
     
     #outlier removal
     mean = np.mean(train_loss)
-    std_dev = np.stdev(train_loss)
+    std_dev = np.std(train_loss)
 
     for i in range(len(train_loss)):
         if math.isnan(train_loss[i]) or train_loss[i] > mean + 3 * std_dev:
