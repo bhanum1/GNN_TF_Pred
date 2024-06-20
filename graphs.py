@@ -70,9 +70,9 @@ if training_curve:
     std_val = np.std(val_loss)
 
     for i in range(len(train_loss)):
-        if math.isnan(train_loss[i]) or train_loss[i] > mean_train + 3 * std_train:
+        if math.isnan(train_loss[i]) or train_loss[i] > mean_train + std_train:
             train_deletions.append(i)
-        if math.isnan(val_loss[i]) or val_loss[i] > mean_val + 3 * std_val:
+        if math.isnan(val_loss[i]) or val_loss[i] > mean_val + std_val:
             val_deletions.append(i)
     
 
