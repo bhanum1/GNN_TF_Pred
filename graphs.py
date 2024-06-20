@@ -40,10 +40,11 @@ if parity_plot:
         plt.xlabel("True Value")
         plt.ylabel("Predicted Value")
         MSE = np.square(np.subtract(truths[i],preds[i])).mean() 
+        MAE = np.subtract(truths[i],preds[i]).mean() 
         plt.text(
         min(truths[i]),
         max(preds[i]),
-        f"SRCC = {scipy.stats.spearmanr(truths[i][:], preds[i][:])[0]:.3f}, MSE = {MSE:.3f}",
+        f"SRCC = {scipy.stats.spearmanr(truths[i][:], preds[i][:])[0]:.3f}, MSE = {MSE:.3f}, MAE = {MAE:.3f}",
         )
         plt.savefig("Graph_Data/" + quantity + "/parity_" + str(columns[i]) + ".png")
         plt.show()
@@ -61,11 +62,17 @@ if training_curve:
     val_epochs = list(epochs)
     train_deletions = []
     val_deletions = []
+    
+    #outlier removal
+    mean = np.mean(train_loss)
+    std_dev = np.stdev(train_loss)
+
     for i in range(len(train_loss)):
-        if math.isnan(train_loss[i]):
+        if math.isnan(train_loss[i]) or train_loss[i] > mean + 3 * std_dev:
             train_deletions.append(i)
         if math.isnan(val_loss[i]):
             val_deletions.append(i)
+    
 
     for index in sorted(train_deletions, reverse=True):
         del train_loss[index]
