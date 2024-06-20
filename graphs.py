@@ -50,7 +50,7 @@ if parity_plot:
 
 if training_curve:
     # Read the csv
-    df = pd.read_csv(PATH + "training.csv")
+    df = pd.read_csv(PATH + quantity + "/training.csv")
     
     epochs = df['epoch']
     train_loss = df['train_loss']
