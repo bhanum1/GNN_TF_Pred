@@ -8,7 +8,7 @@ import math
 
 # Which graphs to make
 parity_plot = True
-training_curve = False
+training_curve = True
 quantity = "viscosity"
 
 columns = ['T1', 'T2', 'T3', 'T4', 'T5']
