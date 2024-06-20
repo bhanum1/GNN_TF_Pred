@@ -9,7 +9,7 @@ import math
 # Which graphs to make
 parity_plot = True
 training_curve = False
-quantity = "vapor_pressure"
+quantity = "viscosity"
 
 columns = ['T1', 'T2', 'T3', 'T4', 'T5']
 # Add PATH here
@@ -50,7 +50,7 @@ if parity_plot:
 
 if training_curve:
     # Read the csv
-    df = pd.read_csv(PATH + "metrics.csv")
+    df = pd.read_csv(PATH + "training.csv")
     
     epochs = df['epoch']
     train_loss = df['train_loss']
@@ -83,5 +83,6 @@ if training_curve:
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.title("Training Curve")
+    plt.savefig("Graph_Data/" + quantity + "/training_curve.png")
     plt.show()
    
