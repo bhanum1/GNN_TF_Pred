@@ -40,7 +40,7 @@ if parity_plot:
         plt.xlabel("True Value")
         plt.ylabel("Predicted Value")
         MSE = np.square(np.subtract(truths[i],preds[i])).mean() 
-        MAE = np.subtract(truths[i],preds[i]).mean() 
+        MAE = np.abs(np.subtract(truths[i],preds[i])).mean()
         plt.text(
         min(truths[i]),
         max(preds[i]),
