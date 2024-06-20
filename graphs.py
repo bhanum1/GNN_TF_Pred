@@ -7,7 +7,7 @@ import scipy.stats
 import math
 
 # Which graphs to make
-parity_plot = True
+parity_plot = False
 training_curve = True
 quantity = "viscosity"
 
@@ -64,13 +64,15 @@ if training_curve:
     val_deletions = []
     
     #outlier removal
-    mean = np.mean(train_loss)
-    std_dev = np.std(train_loss)
+    mean_train = np.mean(train_loss)
+    std_train = np.std(train_loss)
+    mean_val = np.mean(val_loss)
+    std_val = np.std(val_loss)
 
     for i in range(len(train_loss)):
-        if math.isnan(train_loss[i]) or train_loss[i] > mean + 3 * std_dev:
+        if math.isnan(train_loss[i]) or train_loss[i] > mean_train + 3 * std_train:
             train_deletions.append(i)
-        if math.isnan(val_loss[i]):
+        if math.isnan(val_loss[i]) or val_loss[i] > mean_val + 3 * std_val:
             val_deletions.append(i)
     
 
