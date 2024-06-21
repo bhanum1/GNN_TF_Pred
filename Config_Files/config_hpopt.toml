@@ -1,6 +1,6 @@
 # PATH Variables
 config-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Config_Files/config_hpopt.toml
-data-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Datasets/vapour_pressure_data.csv
+data-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Datasets/viscosity_data.csv
 output-dir = /home/bhanu/Documents/Chemprop_Models/
 
 #hpopt stuff
@@ -13,12 +13,12 @@ search-parameter-keywords = all
 activation = RELU
 aggregation = mean
 aggregation-norm = 100
-ffn-num-layers = 3
+ffn-num-layers = 1
 warmup-epochs = 2
 batch-size = 64
 message-hidden-dim = 300
 depth = 3
-dropout = 0.5
+dropout = 0.0
 ffn-hidden-dim = 300
 init-lr = 0.0001
 max-lr = 0.001
@@ -35,7 +35,7 @@ raytune-use-gpu = True
 
 
 # Don't Change
-target-columns = [vapor_pressure]
+target-columns = [Viscosity]
 smiles-columns = [smiles]
 splits-column = splits
 split = RANDOM
