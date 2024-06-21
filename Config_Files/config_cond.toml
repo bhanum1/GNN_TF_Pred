@@ -17,6 +17,7 @@ ffn-hidden-dim = 1100
 init-lr = 0.00140559
 max-lr = 0.0026817
 final-lr = 0.00025257
+loss_reg = 0.1
 epochs = 200
 
 
