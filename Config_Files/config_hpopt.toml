@@ -23,6 +23,7 @@ ffn-hidden-dim = 300
 init-lr = 0.0001
 max-lr = 0.001
 final-lr = 0.0001
+loss_reg = 0.0
 epochs = 50
 
 # GPU/CPU and other training stuff
