@@ -18,7 +18,7 @@ init-lr = 0.0000336
 max-lr = 0.000672
 final-lr = 0.0006
 epochs = 100
-loss_reg = 100.0
+loss_reg = 10000.0
 
 # GPU/CPU and other training stuff
 accelerator = gpu
