@@ -10,7 +10,7 @@ import math
 parity_plot = True
 training_curve = False
 summary = False
-quantity = "conductivity"
+quantity = "vapor_pressure"
 
 columns = ['T1', 'T2', 'T3', 'T4', 'T5']
 # Add data PATH here
