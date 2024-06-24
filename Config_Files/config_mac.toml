@@ -4,7 +4,7 @@ data-path = /Users/bhanumamillapalli/Documents/GitHub/Thermal_Fluid_Prediction_G
 output-dir = /Users/bhanumamillapalli/Documents/Chemprop_Models/
 
 # Hyperparameters
-activation = SELU
+activation = ELU
 aggregation = sum
 aggregation-norm = 150
 ffn-num-layers = 1
