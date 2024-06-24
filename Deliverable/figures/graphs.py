@@ -7,20 +7,21 @@ import scipy.stats
 import math
 
 # Which graphs to make
-parity_plot = True
+parity_plot = False
 training_curve = False
+summary = True
 quantity = "conductivity"
 
 columns = ['T1', 'T2', 'T3', 'T4', 'T5']
-# Add PATH here
-PATH = '/home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Graph_Data/'
+# Add data PATH here
+PATH = '/home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Deliverable/figures/data/'
 
 # Plot style
 plt.style.use("Solarize_Light2")
 
 if parity_plot:
     # Read the csv
-    df = pd.read_csv(PATH + quantity + "/parity.csv")
+    df = pd.read_csv(PATH + quantity + "_parity.csv")
     
     truths, preds = [], []
     for column in columns:
@@ -46,12 +47,12 @@ if parity_plot:
         max(preds[i]),
         f"SRCC = {scipy.stats.spearmanr(truths[i][:], preds[i][:])[0]:.3f}, MSE = {MSE:.3f}, MAE = {MAE:.3f}",
         )
-        plt.savefig("Graph_Data/" + quantity + "/parity_" + str(columns[i]) + ".png")
+        plt.savefig(quantity + "/parity_" + str(columns[i]) + ".png")
         plt.show()
 
 if training_curve:
     # Read the csv
-    df = pd.read_csv(PATH + quantity + "/training.csv")
+    df = pd.read_csv(PATH + quantity + "_training.csv")
     
     epochs = df['epoch']
     train_loss = df['train_loss']
@@ -70,9 +71,9 @@ if training_curve:
     std_val = np.std(val_loss)
 
     for i in range(len(train_loss)):
-        if math.isnan(train_loss[i]) or train_loss[i] > mean_train + std_train:
+        if math.isnan(train_loss[i]) or train_loss[i] > mean_train + 3 * std_train:
             train_deletions.append(i)
-        if math.isnan(val_loss[i]) or val_loss[i] > mean_val + std_val:
+        if math.isnan(val_loss[i]) or val_loss[i] > mean_val + 3 * std_val:
             val_deletions.append(i)
     
 
@@ -92,6 +93,26 @@ if training_curve:
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.title("Training Curve")
-    plt.savefig("Graph_Data/" + quantity + "/training_curve.png")
+    plt.savefig(quantity + "/training_curve.png")
     plt.show()
    
+if summary:
+    df = pd.read_csv(PATH + "summary.csv")
+    barWidth = 0.2
+    fig = plt.subplots(figsize = (8,5))
+
+    srcc = df['SRCC']
+    mae = df['MAE / scale']
+
+    br1 = np.arange(len(srcc))
+    br2 = [x + barWidth for x in br1]
+
+    plt.bar(br1, srcc, width = barWidth, color = 'xkcd:dusty pink', label = 'SRCC')
+    plt.bar(br2, mae, width = barWidth, color = 'xkcd:wine', label = 'MAE / Scale')
+
+    plt.xlabel('Metric')
+    plt.ylabel('Value')
+    plt.xticks([r + barWidth for r in range(len(srcc))], ['Dynamic Viscosity', 'Thermal Conductivity', 'Vapor Pressure', 'Density'])
+    plt.title("Comparison of Model Performance for Properties")
+    plt.legend()
+    plt.show()
