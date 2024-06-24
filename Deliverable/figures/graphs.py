@@ -7,9 +7,9 @@ import scipy.stats
 import math
 
 # Which graphs to make
-parity_plot = True
+parity_plot = False
 training_curve = False
-summary = False
+summary = True
 quantity = "vapor_pressure"
 
 columns = ['T1', 'T2', 'T3', 'T4', 'T5']
@@ -99,7 +99,8 @@ if training_curve:
 if summary:
     df = pd.read_csv(PATH + "summary.csv")
     barWidth = 0.2
-    fig = plt.subplots(figsize = (8,5))
+    fig, ax = plt.subplots(figsize = (8,5))
+    ax2 = ax.twinx()
 
     srcc = df['SRCC']
     mae = df['MAE / scale']
@@ -107,12 +108,23 @@ if summary:
     br1 = np.arange(len(srcc))
     br2 = [x + barWidth for x in br1]
 
-    plt.bar(br1, srcc, width = barWidth, color = 'xkcd:dusty pink', label = 'SRCC')
-    plt.bar(br2, mae, width = barWidth, color = 'xkcd:wine', label = 'MAE / Scale')
+    ax.bar(br1, srcc, width = barWidth, color = 'xkcd:dusty pink', label = 'SRCC')
+    ax2.bar(br2, mae, width = barWidth, color = 'xkcd:wine', label = 'MAE / Scale')
+    ax2.yaxis.grid(False)
+
 
     plt.xlabel('Metric')
-    plt.ylabel('Value')
+    ax.set_ylabel('SRCC')
+    ax2.set_ylabel('MAE / Scale')
     plt.xticks([r + barWidth for r in range(len(srcc))], ['Dynamic Viscosity', 'Thermal Conductivity', 'Vapor Pressure', 'Density'])
     plt.title("Comparison of Model Performance for Properties")
-    plt.legend()
+    
+    h1, l1 = ax.get_legend_handles_labels()
+    h2, l2 = ax2.get_legend_handles_labels()
+    h = h1 + h2
+    l = l1 + l2
+
+    ax.legend(h, l)
+
+
     plt.show()
