@@ -1,23 +1,23 @@
 # PATH Variables
-config-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Config_Files/config.toml
+config-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Config_Files/config_cond.toml
 data-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Datasets/cond_data.csv
 output-dir = /home/bhanu/Documents/Chemprop_Models/
 
 # Hyperparameters
-activation = SELU
-aggregation = mean
-aggregation-norm = 20
-ffn-num-layers = 1
+activation = LEAKYRELU
+aggregation = norm
+aggregation-norm = 183
+ffn-num-layers = 2
 warmup-epochs = 15
-batch-size = 256
-message-hidden-dim = 700
+batch-size = 32
+message-hidden-dim = 300
 depth = 4
-dropout = 0.15
-ffn-hidden-dim = 1000
-init-lr = 0.00000564134
-max-lr = 0.00046048
-final-lr = 0.00000471715
-loss_reg = 0.15
+dropout = 0.35
+ffn-hidden-dim = 400
+init-lr = 0.000364560593
+max-lr = 0.000368055
+final-lr = 0.00003400362
+loss_reg = 0.0
 epochs = 50
 
 
