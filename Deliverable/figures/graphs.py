@@ -116,7 +116,7 @@ if summary:
     plt.xlabel('Metric')
     ax.set_ylabel('SRCC')
     ax2.set_ylabel('MAE / Scale')
-    plt.xticks([r + barWidth for r in range(len(srcc))], ['Dynamic Viscosity', 'Thermal Conductivity', 'Vapor Pressure', 'Density'])
+    plt.xticks([r + barWidth for r in range(len(srcc))], ['Dynamic Viscosity', 'Thermal Conductivity', 'Vapor Pressure'])
     plt.title("Comparison of Model Performance for Properties")
     
     h1, l1 = ax.get_legend_handles_labels()
