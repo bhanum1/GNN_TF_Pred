@@ -9,7 +9,7 @@ import math
 # Which graphs to make
 parity_plot = True
 training_curve = True
-summary = False
+summary = True
 quantity = "conductivity"
 
 columns = ['T1', 'T2', 'T3', 'T4', 'T5']
