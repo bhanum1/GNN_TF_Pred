@@ -1,0 +1,48 @@
+# PATH Variables
+config-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Config_Files/config_vp_2.toml
+data-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Datasets/vapour_pressure_data.csv
+output-dir = /home/bhanu/Documents/Chemprop_Models/
+
+# Hyperparameters
+activation = RELU
+aggregation = norm
+aggregation-norm = 118
+ffn-num-layers = 1
+warmup-epochs = 23
+batch-size = 16
+message-hidden-dim = 1400
+depth = 5
+dropout = 0.0
+ffn-hidden-dim = 1300
+init-lr = 0.00024745696
+max-lr = 0.0073253
+final-lr = 0.0009308572
+epochs = 500
+loss-reg = 0.3
+
+# GPU/CPU and other training stuff
+accelerator = gpu
+num-workers = 7
+devices = auto
+ensemble-size = 1
+
+
+
+# Don't Change
+target-columns = [vapor_pressure]
+smiles-columns = [smiles]
+splits-column = splits
+split = RANDOM
+split-sizes = [0.8, 0.1, 0.1]
+split-key-molecule = 0
+num-folds = 1
+data-seed = 0
+task-type = regression
+rxn-mode = REAC_DIFF
+multi-hot-atom-featurizer-mode = V2
+frzn-ffn-layers = 0
+multiclass-num-classes = 3
+v-kl = 0.0
+eps = 1e-08
+
+
