@@ -13,12 +13,12 @@ ffn-num-layers = 1
 warmup-epochs = 1
 batch-size = 32
 dropout = 0.5
-ffn-hidden-dim = 100
+ffn-hidden-dim = 10
 init-lr = 0.0000336
 max-lr = 0.000672
 final-lr = 0.0006
-loss_reg = 1000000
-epochs = 10
+loss_reg = 1
+epochs = 100
 frzn-ffn-layers = 0
 
 # GPU/CPU and other training stuff
