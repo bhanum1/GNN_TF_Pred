@@ -2,7 +2,7 @@
 config-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Config_Files/config_transfer.toml
 data-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Datasets/viscosity_transfer.csv
 output-dir = /home/bhanu/Documents/Chemprop_Models/
-model-frzn = /home/bhanu/Documents/Chemprop_Models/best.pt
+model-frzn = /home/bhanu/Documents/best_model_files/conductivity/best_model/checkpoint.ckpt
 
 
 # Hyperparameters
@@ -13,11 +13,11 @@ ffn-num-layers = 1
 warmup-epochs = 1
 batch-size = 32
 dropout = 0.0
-ffn-hidden-dim = 10
+ffn-hidden-dim = 100
 init-lr = 0.0000336
 max-lr = 0.000672
 final-lr = 0.0006
-loss_reg = 0.3
+loss_reg = 0.0
 epochs = 20
 
 

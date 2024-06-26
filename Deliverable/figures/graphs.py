@@ -8,9 +8,9 @@ import math
 
 # Which graphs to make
 parity_plot = True
-training_curve = True
-summary = True
-quantity = "conductivity"
+training_curve = False
+summary = False
+quantity = "viscosity"
 
 columns = ['T1', 'T2', 'T3', 'T4', 'T5']
 # Add data PATH here
