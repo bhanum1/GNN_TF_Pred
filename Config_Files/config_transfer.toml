@@ -12,14 +12,13 @@ aggregation-norm = 150
 ffn-num-layers = 1
 warmup-epochs = 1
 batch-size = 32
-message-hidden-dim = 1700
-depth = 3
 dropout = 0.5
-ffn-hidden-dim = 2
+ffn-hidden-dim = 100
 init-lr = 0.0000336
 max-lr = 0.000672
 final-lr = 0.0006
 epochs = 100
+loss_reg = 10
 frzn-ffn-layers = 0
 
 # GPU/CPU and other training stuff
