@@ -17,8 +17,8 @@ ffn-hidden-dim = 100
 init-lr = 0.0000336
 max-lr = 0.000672
 final-lr = 0.0006
-epochs = 100
-loss_reg = 10
+loss_reg = 1000000
+epochs = 10
 frzn-ffn-layers = 0
 
 # GPU/CPU and other training stuff
