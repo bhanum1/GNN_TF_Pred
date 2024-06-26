@@ -7,7 +7,7 @@ output-dir = /home/bhanu/Documents/Chemprop_Models/
 activation = LEAKYRELU
 aggregation = norm
 aggregation-norm = 183
-ffn-num-layers = 2
+ffn-num-layers = 4
 warmup-epochs = 15
 batch-size = 32
 message-hidden-dim = 300
@@ -18,7 +18,7 @@ init-lr = 0.000364560593
 max-lr = 0.000368055
 final-lr = 0.00003400362
 loss_reg = 0.0
-epochs = 500
+epochs = 100
 
 
 # GPU/CPU and other training stuff
