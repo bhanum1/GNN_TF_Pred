@@ -6,7 +6,9 @@ from lightning import pytorch as pl
 from chemprop import data, featurizers, models, nn
 import torch
 import copy
+import torch.optim as optim
 
+'''
 input_path = 'maml_data.csv' # path to your data .csv file
 df = pd.read_csv(input_path) #convert to dataframe
 num_workers = 0 # number of workers for dataloader. 0 means using main process for data loading
@@ -32,7 +34,7 @@ tk_data = [data.MoleculeDatapoint.from_smi(smi, y) for smi, y in zip(task_smis[2
 featurizer = featurizers.SimpleMoleculeMolGraphFeaturizer()
 
 vp_mols = [d.mol for d in vp_data]  # RDkit Mol objects are use for structure based splits
-train_indices, val_indices, test_indices = data.make_split_indices(vp_mols, "random", (0.4, 0.4, 0.2))
+train_indices, val_indices, test_indices = data.make_split_indices(vp_mols, "random", (0.7, 0.2, 0.1))
 train_data, val_data, test_data = data.split_data_by_indices(
     vp_data, train_indices, val_indices, test_indices
 )
@@ -42,7 +44,7 @@ vp_test = data.MoleculeDataset(test_data, featurizer)
 
 
 vd_mols = [d.mol for d in vd_data]  # RDkit Mol objects are use for structure based splits
-train_indices, val_indices, test_indices = data.make_split_indices(vd_mols, "random", (0.4, 0.4, 0.2))
+train_indices, val_indices, test_indices = data.make_split_indices(vd_mols, "random", (0.7, 0.2, 0.1))
 train_data, val_data, test_data = data.split_data_by_indices(
     vd_data, train_indices, val_indices, test_indices
 )
@@ -52,7 +54,7 @@ vd_val = data.MoleculeDataset(val_data, featurizer)
 vd_test = data.MoleculeDataset(test_data, featurizer)
 
 tk_mols = [d.mol for d in tk_data]  # RDkit Mol objects are use for structure based splits
-train_indices, val_indices, test_indices = data.make_split_indices(tk_mols, "random", (0.4, 0.4, 0.2))
+train_indices, val_indices, test_indices = data.make_split_indices(tk_mols, "random", (0.7, 0.2, 0.1))
 train_data, val_data, test_data = data.split_data_by_indices(
     tk_data, train_indices, val_indices, test_indices
 )
@@ -63,15 +65,15 @@ tk_test = data.MoleculeDataset(test_data, featurizer)
 
 vp_train_loader = data.build_dataloader(vp_train, num_workers=num_workers)
 vp_val_loader = data.build_dataloader(vp_val, num_workers=num_workers, shuffle=False)
-vp_test_loader = data.build_dataloader(vp_test, num_workers=num_workers, shuffle=False)
+vp_test_loader = data.build_dataloader(vp_test, num_workers=num_workers, shuffle=False, batch_size = 1)
 
 vd_train_loader = data.build_dataloader(vd_train, num_workers=num_workers)
 vd_val_loader = data.build_dataloader(vd_val, num_workers=num_workers, shuffle=False)
-vd_test_loader = data.build_dataloader(vd_test, num_workers=num_workers, shuffle=False)
+vd_test_loader = data.build_dataloader(vd_test, num_workers=num_workers, shuffle=False, batch_size = 1)
 
 tk_train_loader = data.build_dataloader(tk_train, num_workers=num_workers)
 tk_val_loader = data.build_dataloader(tk_val, num_workers=num_workers, shuffle=False)
-tk_test_loader = data.build_dataloader(tk_test, num_workers=num_workers, shuffle=False)
+tk_test_loader = data.build_dataloader(tk_test, num_workers=num_workers, shuffle=False, batch_size = 1)
 
 #A few hyperparameters, more can be found by looking through chemprop/nn/message_passing/base.py
 mp = nn.BondMessagePassing(depth=3) # Make the mpnn
@@ -81,43 +83,60 @@ ffn = nn.RegressionFFN()
 # I haven't experimented with this at all, not sure if it will affect the SSL
 batch_norm = False
 
+#initialize the model
+#tasks = tasks[1:]
 mpnn = models.MPNN(mp, agg, ffn, batch_norm, [nn.metrics.MSEMetric])
 
-epochs = 10
+# Define th eloss function and optimizer
 criterion = torch.nn.MSELoss(reduction='sum')
-#epochs
-for epoch in range(epochs):
-    # vapor pressure
+optimizer = optim.SGD(mpnn.parameters(), lr = 0.01)
 
-    for batch in vp_train_loader:
+# inner optimization loop
+for epoch in range(1000):
+    total_loss = 0
+    for task in tasks:
+        optimizer.zero_grad()
+        loader = None
+        if task == 'vp':
+            loader = vp_train_loader
+        elif task =='vd':
+            loader = vd_train_loader
+        else:
+            loader = tk_train_loader
+        
+        for batch in loader:
+            bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
+            pred = mpnn(bmg)
+            targets = targets.reshape(-1,1)
+            loss = criterion(pred, targets)
+
+            loss.backward()
+            optimizer.step()
+        
+        total_loss += loss
+        
+    print(total_loss)
+
+val_loss = 0
+for task in tasks:
+    optimizer.zero_grad()
+    loader = None
+    if task == 'vp':
+        loader = vp_test_loader
+    elif task =='vd':
+        loader = vd_test_loader
+    else:
+        loader = tk_test_loader
+    
+    for batch in loader:
         bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
         pred = mpnn(bmg)
         targets = targets.reshape(-1,1)
-
         loss = criterion(pred, targets)
+        print(task, "Predictions:", pred, "Target:", targets)
 
-        orig_params = [param.clone() for param in mpnn.parameters()]
-        grads = torch.autograd.grad(loss, mpnn.parameters(), retain_graph=True)
+        val_loss += loss
 
-        # Step 3: Perform manual update of the cloned parameters
-        with torch.no_grad():
-            for param, grad in zip(mpnn.parameters(), grads):
-                param -= 0.01 * grad
+print("Val Loss:" , val_loss)
+'''
 
-    for batch in vp_val_loader:
-        bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
-        pred = mpnn(bmg)
-
-        targets = targets.reshape(-1,1)
-        task_loss_1 = criterion(pred, targets)
-    
-
-    orig_state_dict = {f'orig_{i}': param for i, param in enumerate(orig_params)}
-    
-    # Load the original state dict into the model
-    mpnn.load_state_dict(orig_state_dict, strict=False)
-
-    grads = torch.autograd.grad(task_loss_1, mpnn.parameters())
-    with torch.no_grad():
-        for param, grad in zip(mpnn.parameters(), grads):
-            param -= 0.01 * grad
