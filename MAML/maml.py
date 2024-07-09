@@ -7,6 +7,7 @@ from chemprop import data, featurizers, models, nn
 import torch
 import copy
 import torch.optim as optim
+import torch.nn.functional as F
 
 #DATA GENERATION
 
@@ -35,7 +36,7 @@ tk_data = [data.MoleculeDatapoint.from_smi(smi, y) for smi, y in zip(task_smis[2
 featurizer = featurizers.SimpleMoleculeMolGraphFeaturizer()
 
 vp_mols = [d.mol for d in vp_data]  # RDkit Mol objects are use for structure based splits
-train_indices, val_indices, test_indices = data.make_split_indices(vp_mols, "random", (0.7, 0.2, 0.1))
+train_indices, val_indices, test_indices = data.make_split_indices(vp_mols, "random", (0.2, 0.6, 0.2))
 train_data, val_data, test_data = data.split_data_by_indices(
     vp_data, train_indices, val_indices, test_indices
 )
@@ -45,7 +46,7 @@ vp_test = data.MoleculeDataset(test_data, featurizer)
 
 
 vd_mols = [d.mol for d in vd_data]  # RDkit Mol objects are use for structure based splits
-train_indices, val_indices, test_indices = data.make_split_indices(vd_mols, "random", (0.7, 0.2, 0.1))
+train_indices, val_indices, test_indices = data.make_split_indices(vd_mols, "random", (0.2, 0.6, 0.2))
 train_data, val_data, test_data = data.split_data_by_indices(
     vd_data, train_indices, val_indices, test_indices
 )
@@ -55,7 +56,7 @@ vd_val = data.MoleculeDataset(val_data, featurizer)
 vd_test = data.MoleculeDataset(test_data, featurizer)
 
 tk_mols = [d.mol for d in tk_data]  # RDkit Mol objects are use for structure based splits
-train_indices, val_indices, test_indices = data.make_split_indices(tk_mols, "random", (0.7, 0.2, 0.1))
+train_indices, val_indices, test_indices = data.make_split_indices(tk_mols, "random", (0.2, 0.6, 0.2))
 train_data, val_data, test_data = data.split_data_by_indices(
     tk_data, train_indices, val_indices, test_indices
 )
@@ -66,17 +67,17 @@ tk_test = data.MoleculeDataset(test_data, featurizer)
 
 vp_train_loader = data.build_dataloader(vp_train, num_workers=num_workers)
 vp_val_loader = data.build_dataloader(vp_val, num_workers=num_workers, shuffle=False)
-vp_test_loader = data.build_dataloader(vp_test, num_workers=num_workers, shuffle=False, batch_size = 1)
+vp_test_loader = data.build_dataloader(vp_test, num_workers=num_workers, shuffle=False)
 
 vd_train_loader = data.build_dataloader(vd_train, num_workers=num_workers)
 vd_val_loader = data.build_dataloader(vd_val, num_workers=num_workers, shuffle=False)
-vd_test_loader = data.build_dataloader(vd_test, num_workers=num_workers, shuffle=False, batch_size = 1)
+vd_test_loader = data.build_dataloader(vd_test, num_workers=num_workers, shuffle=False)
 
 tk_train_loader = data.build_dataloader(tk_train, num_workers=num_workers)
 tk_val_loader = data.build_dataloader(tk_val, num_workers=num_workers, shuffle=False)
-tk_test_loader = data.build_dataloader(tk_test, num_workers=num_workers, shuffle=False, batch_size = 1)
+tk_test_loader = data.build_dataloader(tk_test, num_workers=num_workers, shuffle=False)
 
-#mp = nn.BondMessagePassing(depth=3) # Make the mpnn
+mp = nn.BondMessagePassing(depth=3) # Make the mpnn
 #agg = nn.MeanAggregation() # Aggregation type. Can also do SumAgg. or NormAgg.
 ffn = nn.RegressionFFN()
 
@@ -86,38 +87,100 @@ batch_norm = False
 #initialize the model
 #mpnn = models.MPNN(mp, agg, ffn, batch_norm, [nn.metrics.MSEMetric])
 
-fp_mpnn = models.MPNN.load_from_checkpoint('/Users/bhanumamillapalli/Desktop/Current_Work/2024_Research_Project/Models/sol-gnn/model_default/best.pt')
+fp_mpnn = models.MPNN.load_from_checkpoint('/Users/bhanumamillapalli/Desktop/Current_Work/2024_Research_Project/Models/best.ckpt')
 fp_mpnn.eval()
 
 # Define the loss function and optimizer
 criterion = torch.nn.MSELoss(reduction='sum')
-optimizer = optim.SGD(ffn.parameters(), lr = 0.01)
+optimizer = optim.SGD(ffn.parameters(), lr = 0.0001)
+test = optim.SGD(mp.parameters(), lr=0.01)
+
+def argforward(weights, inputs):
+    output = F.linear(inputs,weights[0],weights[1])
+    output = F.relu(output)
+    output = F.linear(output,weights[2],weights[3])
+
+    return output
 
 # inner optimization loop
-for epoch in range(100):
+for epoch in range(500):
     total_loss = 0
+    optimizer.zero_grad()
     for task in tasks:
-        optimizer.zero_grad()
         loader = None
         if task == 'vp':
             loader = vp_train_loader
+            val_loader = vp_val_loader
         elif task =='vd':
             loader = vd_train_loader
+            val_loader = vd_val_loader
         else:
             loader = tk_train_loader
+            val_loader = tk_val_loader
         
+        temp_weights=[w.clone() for w in ffn.parameters()]
         for batch in loader:
             bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
-            fp = fp_mpnn(bmg)
-            pred = ffn(fp)
+            fp = fp_mpnn.fingerprint(bmg)
+            pred=argforward(temp_weights, fp)
+
             targets = targets.reshape(-1,1)
             loss = criterion(pred, targets)
 
-            loss.backward()
-            optimizer.step()
-        
-        total_loss += loss
-        
+            grads=torch.autograd.grad(loss,temp_weights)
+            temp_weights=[w-0.001*g for w,g in zip(temp_weights,grads)] #temporary update of weights
+
+        for batch in val_loader:
+            bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
+            fp = fp_mpnn.fingerprint(bmg)
+            pred=argforward(temp_weights, fp)
+
+            targets = targets.reshape(-1,1)
+            metaloss = criterion(pred, targets)
+            total_loss += metaloss
+
+
+    metagrads=torch.autograd.grad(total_loss,ffn.parameters())
+    #important step
+    for w,g in zip(ffn.parameters(),metagrads):
+        w.grad=g
+    
+    optimizer.step()
     print(total_loss)
 
 
+
+for task in tasks:
+    temp_weights=[w.clone() for w in ffn.parameters()]
+    loader = None
+    if task == 'vp':
+        loader = vp_train_loader
+        test_loader = vp_test_loader
+    elif task =='vd':
+        loader = vd_train_loader
+        test_loader = vd_test_loader
+    else:
+        loader = tk_train_loader
+        test_loader = tk_test_loader
+    
+    for batch in loader:
+        for i in range(50):
+            bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
+            fp = fp_mpnn.fingerprint(bmg)
+            pred=argforward(temp_weights, fp)
+
+            targets = targets.reshape(-1,1)
+            loss = criterion(pred, targets)
+            print(task, "Train loss:", loss)
+            grads=torch.autograd.grad(loss,temp_weights)
+            temp_weights=[w-0.0001*g for w,g in zip(temp_weights,grads)] #temporary update of weights
+    
+    for batch in test_loader:
+        bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
+        fp = fp_mpnn.fingerprint(bmg)
+        pred=argforward(temp_weights, fp)
+
+        targets = targets.reshape(-1,1)
+        test_loss = criterion(pred, targets)
+        print(task, test_loss)
+        print(pred, targets)
