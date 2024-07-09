@@ -8,7 +8,8 @@ import torch
 import copy
 import torch.optim as optim
 
-'''
+#DATA GENERATION
+
 input_path = 'maml_data.csv' # path to your data .csv file
 df = pd.read_csv(input_path) #convert to dataframe
 num_workers = 0 # number of workers for dataloader. 0 means using main process for data loading
@@ -75,24 +76,25 @@ tk_train_loader = data.build_dataloader(tk_train, num_workers=num_workers)
 tk_val_loader = data.build_dataloader(tk_val, num_workers=num_workers, shuffle=False)
 tk_test_loader = data.build_dataloader(tk_test, num_workers=num_workers, shuffle=False, batch_size = 1)
 
-#A few hyperparameters, more can be found by looking through chemprop/nn/message_passing/base.py
-mp = nn.BondMessagePassing(depth=3) # Make the mpnn
-agg = nn.MeanAggregation() # Aggregation type. Can also do SumAgg. or NormAgg.
+#mp = nn.BondMessagePassing(depth=3) # Make the mpnn
+#agg = nn.MeanAggregation() # Aggregation type. Can also do SumAgg. or NormAgg.
 ffn = nn.RegressionFFN()
 
 # I haven't experimented with this at all, not sure if it will affect the SSL
 batch_norm = False
 
 #initialize the model
-#tasks = tasks[1:]
-mpnn = models.MPNN(mp, agg, ffn, batch_norm, [nn.metrics.MSEMetric])
+#mpnn = models.MPNN(mp, agg, ffn, batch_norm, [nn.metrics.MSEMetric])
 
-# Define th eloss function and optimizer
+fp_mpnn = models.MPNN.load_from_checkpoint('/Users/bhanumamillapalli/Desktop/Current_Work/2024_Research_Project/Models/sol-gnn/model_default/best.pt')
+fp_mpnn.eval()
+
+# Define the loss function and optimizer
 criterion = torch.nn.MSELoss(reduction='sum')
-optimizer = optim.SGD(mpnn.parameters(), lr = 0.01)
+optimizer = optim.SGD(ffn.parameters(), lr = 0.01)
 
 # inner optimization loop
-for epoch in range(1000):
+for epoch in range(100):
     total_loss = 0
     for task in tasks:
         optimizer.zero_grad()
@@ -106,7 +108,8 @@ for epoch in range(1000):
         
         for batch in loader:
             bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
-            pred = mpnn(bmg)
+            fp = fp_mpnn(bmg)
+            pred = ffn(fp)
             targets = targets.reshape(-1,1)
             loss = criterion(pred, targets)
 
@@ -117,26 +120,4 @@ for epoch in range(1000):
         
     print(total_loss)
 
-val_loss = 0
-for task in tasks:
-    optimizer.zero_grad()
-    loader = None
-    if task == 'vp':
-        loader = vp_test_loader
-    elif task =='vd':
-        loader = vd_test_loader
-    else:
-        loader = tk_test_loader
-    
-    for batch in loader:
-        bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
-        pred = mpnn(bmg)
-        targets = targets.reshape(-1,1)
-        loss = criterion(pred, targets)
-        print(task, "Predictions:", pred, "Target:", targets)
-
-        val_loss += loss
-
-print("Val Loss:" , val_loss)
-'''
 
