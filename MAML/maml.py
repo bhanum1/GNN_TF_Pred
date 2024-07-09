@@ -8,10 +8,11 @@ import torch
 import copy
 import torch.optim as optim
 import torch.nn.functional as F
+import csv
 
 #DATA GENERATION
 
-input_path = 'maml_data.csv' # path to your data .csv file
+input_path = 'maml_newdata.csv' # path to your data .csv file
 df = pd.read_csv(input_path) #convert to dataframe
 num_workers = 0 # number of workers for dataloader. 0 means using main process for data loading
 
@@ -36,7 +37,7 @@ tk_data = [data.MoleculeDatapoint.from_smi(smi, y) for smi, y in zip(task_smis[2
 featurizer = featurizers.SimpleMoleculeMolGraphFeaturizer()
 
 vp_mols = [d.mol for d in vp_data]  # RDkit Mol objects are use for structure based splits
-train_indices, val_indices, test_indices = data.make_split_indices(vp_mols, "random", (0.2, 0.6, 0.2))
+train_indices, val_indices, test_indices = data.make_split_indices(vp_mols, "random", (0.4, 0.4, 0.2))
 train_data, val_data, test_data = data.split_data_by_indices(
     vp_data, train_indices, val_indices, test_indices
 )
@@ -46,7 +47,7 @@ vp_test = data.MoleculeDataset(test_data, featurizer)
 
 
 vd_mols = [d.mol for d in vd_data]  # RDkit Mol objects are use for structure based splits
-train_indices, val_indices, test_indices = data.make_split_indices(vd_mols, "random", (0.2, 0.6, 0.2))
+train_indices, val_indices, test_indices = data.make_split_indices(vd_mols, "random", (0.4, 0.4, 0.2))
 train_data, val_data, test_data = data.split_data_by_indices(
     vd_data, train_indices, val_indices, test_indices
 )
@@ -56,7 +57,7 @@ vd_val = data.MoleculeDataset(val_data, featurizer)
 vd_test = data.MoleculeDataset(test_data, featurizer)
 
 tk_mols = [d.mol for d in tk_data]  # RDkit Mol objects are use for structure based splits
-train_indices, val_indices, test_indices = data.make_split_indices(tk_mols, "random", (0.2, 0.6, 0.2))
+train_indices, val_indices, test_indices = data.make_split_indices(tk_mols, "random", (0.4, 0.4, 0.2))
 train_data, val_data, test_data = data.split_data_by_indices(
     tk_data, train_indices, val_indices, test_indices
 )
@@ -91,9 +92,8 @@ fp_mpnn = models.MPNN.load_from_checkpoint('/Users/bhanumamillapalli/Desktop/Cur
 fp_mpnn.eval()
 
 # Define the loss function and optimizer
-criterion = torch.nn.MSELoss(reduction='sum')
-optimizer = optim.SGD(ffn.parameters(), lr = 0.0001)
-test = optim.SGD(mp.parameters(), lr=0.01)
+criterion = torch.nn.MSELoss(reduction='mean')
+optimizer = optim.SGD(ffn.parameters(), lr = 0.001)
 
 def argforward(weights, inputs):
     output = F.linear(inputs,weights[0],weights[1])
@@ -149,8 +149,12 @@ for epoch in range(500):
     print(total_loss)
 
 
+final_preds = []
+final_targets = []
 
 for task in tasks:
+    pred_out = []
+    target_out = []
     temp_weights=[w.clone() for w in ffn.parameters()]
     loader = None
     if task == 'vp':
@@ -164,23 +168,46 @@ for task in tasks:
         test_loader = tk_test_loader
     
     for batch in loader:
-        for i in range(50):
+        for i in range(5):
             bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
             fp = fp_mpnn.fingerprint(bmg)
             pred=argforward(temp_weights, fp)
 
             targets = targets.reshape(-1,1)
             loss = criterion(pred, targets)
-            print(task, "Train loss:", loss)
             grads=torch.autograd.grad(loss,temp_weights)
-            temp_weights=[w-0.0001*g for w,g in zip(temp_weights,grads)] #temporary update of weights
+            temp_weights=[w-0.001*g for w,g in zip(temp_weights,grads)] #temporary update of weights
     
+    test_loss = 0
     for batch in test_loader:
         bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
         fp = fp_mpnn.fingerprint(bmg)
         pred=argforward(temp_weights, fp)
 
         targets = targets.reshape(-1,1)
-        test_loss = criterion(pred, targets)
-        print(task, test_loss)
-        print(pred, targets)
+        test_loss += criterion(pred, targets)
+        pred_out.extend(pred.detach().numpy())
+        target_out.extend(targets.detach().numpy())
+
+    print(task, test_loss)
+    for i in range(len(pred_out)):
+        pred_out[i] = pred_out[i][0]
+    for i in range(len(target_out)):
+        target_out[i] = target_out[i][0]
+
+    final_preds.append(pred_out)
+    final_targets.append(target_out)
+
+
+
+dict_vp = {'pred_vp':final_preds[0], 'target_vp':final_targets[0]}
+dict_vd = {'pred_vd':final_preds[1], 'target_vd':final_targets[1]}
+dict_tk = {'pred_tk':final_preds[2], 'target_tk':final_targets[2]}
+
+vp_out = pd.DataFrame(dict_vp)
+vd_out = pd.DataFrame(dict_vd)
+tk_out = pd.DataFrame(dict_tk)
+
+vp_out.to_csv('vp.csv')
+vd_out.to_csv('vd.csv')
+tk_out.to_csv('tk.csv')
