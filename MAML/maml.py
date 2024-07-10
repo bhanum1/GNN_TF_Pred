@@ -38,13 +38,14 @@ for task in tasks:
     task_targets = targets.loc[indices]
 
     #create data
-    data = [data.MoleculeDatapoint.from_smi(smi, y) for smi, y in zip(task_smis[task], task_targets[task])]
-    mols = [d.mol for d in data]
+    task_data = [data.MoleculeDatapoint.from_smi(smi, y) for smi, y in zip(task_smis, task_targets)]
+    mols = [d.mol for d in task_data]
+    
     
     #split data
     train_indices, val_indices, test_indices = data.make_split_indices(mols, "random", (0.4, 0.4, 0.2)) #create split indices
     train_data, val_data, test_data = data.split_data_by_indices(
-    data, train_indices, val_indices, test_indices
+    task_data, train_indices, val_indices, test_indices
     )
 
     #create dataset
@@ -54,8 +55,8 @@ for task in tasks:
 
     #add to loaders
     train_loaders.append(data.build_dataloader(train_dataset, num_workers=num_workers,batch_size=1))
-    val_loaders.append(data.build_dataloader(train_dataset, num_workers=num_workers,batch_size=1))
-    test_loaders.append(data.build_dataloader(train_dataset, num_workers=num_workers,batch_size=1))
+    val_loaders.append(data.build_dataloader(val_dataset, num_workers=num_workers,batch_size=1))
+    test_loaders.append(data.build_dataloader(test_dataset, num_workers=num_workers,batch_size=1))
 
 #mp = nn.BondMessagePassing(depth=3) # Make the mpnn
 #agg = nn.MeanAggregation() # Aggregation type. Can also do SumAgg. or NormAgg.
@@ -74,7 +75,7 @@ fp_mpnn.eval()
 
 # Define the loss function and optimizer
 criterion = torch.nn.MSELoss(reduction='mean')
-optimizer = optim.SGD(ffn.parameters(), lr = 0.001)
+optimizer = optim.SGD(ffn.parameters(), lr = 0.0005)
 
 def argforward(weights, inputs):
     output = F.linear(inputs,weights[0],weights[1])
@@ -84,8 +85,7 @@ def argforward(weights, inputs):
     return output
 
 # inner optimization loop
-tasks = ['vd']
-for epoch in range(500):
+for epoch in range(200):
     total_loss = 0
     optimizer.zero_grad()
     for task in tasks:
@@ -101,7 +101,6 @@ for epoch in range(500):
 
             targets = targets.reshape(-1,1)
             loss = criterion(pred, targets)
-
             grads=torch.autograd.grad(loss,temp_weights)
             temp_weights=[w-0.001*g for w,g in zip(temp_weights,grads)] #temporary update of weights
 
@@ -121,7 +120,7 @@ for epoch in range(500):
         w.grad=g
     
     optimizer.step()
-    print(total_loss)
+    print(epoch, total_loss)
 
 
 final_preds = []
@@ -138,7 +137,7 @@ for task in tasks:
 
     
     for batch in train_loader:
-        for i in range(5):
+        for i in range(3):
             bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
             fp = fp_mpnn.fingerprint(bmg)
             pred=argforward(temp_weights, fp)
@@ -168,6 +167,15 @@ for task in tasks:
     final_preds.append(pred_out)
     final_targets.append(target_out)
 
+
+
+for task in tasks:
+    pred_label = 'pred_' + str(task)
+    true_label = 'true_' + str(task)
+    df = pd.DataFrame({true_label:final_targets[task], pred_label:final_preds[task]})
+
+    filename = str(task) + '.csv'
+    df.to_csv(filename)
 
 
 #dict_vp = {'pred_vp':final_preds[0], 'target_vp':final_targets[0]}
