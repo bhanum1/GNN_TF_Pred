@@ -11,74 +11,53 @@ import torch.nn.functional as F
 import csv
 
 #DATA GENERATION
-
-input_path = 'maml_newdata.csv' # path to your data .csv file
+input_path = 'maml_bigdata.csv' # path to your data .csv file
 df = pd.read_csv(input_path) #convert to dataframe
 num_workers = 0 # number of workers for dataloader. 0 means using main process for data loading
 
+#get columns
 smis = df['smiles']
 targets = df['target']
 task_labels = df['task']
-tasks = ['vp', 'vd', 'tk']
 
+#iterable for tasks
+num_tasks = 10
+tasks = range(num_tasks)
 
-task_smis = []
-task_targets = []
-for task in tasks:
-    indices = task_labels == task
-    task_smis.append(smis.loc[indices])
-    task_targets.append(targets.loc[indices])
-
-vp_data = [data.MoleculeDatapoint.from_smi(smi, y) for smi, y in zip(task_smis[0], task_targets[0])]
-vd_data = [data.MoleculeDatapoint.from_smi(smi, y) for smi, y in zip(task_smis[1], task_targets[1])]
-tk_data = [data.MoleculeDatapoint.from_smi(smi, y) for smi, y in zip(task_smis[2], task_targets[2])]
-
-#make the graphs and put into a dataset
+#create holders for all dataloaders
+train_loaders = []
+val_loaders = []
+test_loaders = []
 featurizer = featurizers.SimpleMoleculeMolGraphFeaturizer()
 
-vp_mols = [d.mol for d in vp_data]  # RDkit Mol objects are use for structure based splits
-train_indices, val_indices, test_indices = data.make_split_indices(vp_mols, "random", (0.4, 0.4, 0.2))
-train_data, val_data, test_data = data.split_data_by_indices(
-    vp_data, train_indices, val_indices, test_indices
-)
-vp_train = data.MoleculeDataset(train_data, featurizer)
-vp_val = data.MoleculeDataset(val_data, featurizer)
-vp_test = data.MoleculeDataset(test_data, featurizer)
+#separate data by task and put into loaders
+for task in tasks:
+    #get the smis and targets for the task
+    indices = task_labels == task
+    task_smis = smis.loc[indices]
+    task_targets = targets.loc[indices]
 
+    #create data
+    data = [data.MoleculeDatapoint.from_smi(smi, y) for smi, y in zip(task_smis[task], task_targets[task])]
+    mols = [d.mol for d in data]
+    
+    #split data
+    train_indices, val_indices, test_indices = data.make_split_indices(mols, "random", (0.4, 0.4, 0.2)) #create split indices
+    train_data, val_data, test_data = data.split_data_by_indices(
+    data, train_indices, val_indices, test_indices
+    )
 
-vd_mols = [d.mol for d in vd_data]  # RDkit Mol objects are use for structure based splits
-train_indices, val_indices, test_indices = data.make_split_indices(vd_mols, "random", (0.4, 0.4, 0.2))
-train_data, val_data, test_data = data.split_data_by_indices(
-    vd_data, train_indices, val_indices, test_indices
-)
+    #create dataset
+    train_dataset = data.MoleculeDataset(train_data, featurizer)
+    val_dataset = data.MoleculeDataset(val_data, featurizer)
+    test_dataset = data.MoleculeDataset(test_data, featurizer)
 
-vd_train = data.MoleculeDataset(train_data, featurizer)
-vd_val = data.MoleculeDataset(val_data, featurizer)
-vd_test = data.MoleculeDataset(test_data, featurizer)
+    #add to loaders
+    train_loaders.append(data.build_dataloader(train_dataset, num_workers=num_workers,batch_size=1))
+    val_loaders.append(data.build_dataloader(train_dataset, num_workers=num_workers,batch_size=1))
+    test_loaders.append(data.build_dataloader(train_dataset, num_workers=num_workers,batch_size=1))
 
-tk_mols = [d.mol for d in tk_data]  # RDkit Mol objects are use for structure based splits
-train_indices, val_indices, test_indices = data.make_split_indices(tk_mols, "random", (0.4, 0.4, 0.2))
-train_data, val_data, test_data = data.split_data_by_indices(
-    tk_data, train_indices, val_indices, test_indices
-)
-
-tk_train = data.MoleculeDataset(train_data, featurizer)
-tk_val = data.MoleculeDataset(val_data, featurizer)
-tk_test = data.MoleculeDataset(test_data, featurizer)
-
-vp_train_loader = data.build_dataloader(vp_train, num_workers=num_workers)
-vp_val_loader = data.build_dataloader(vp_val, num_workers=num_workers, shuffle=False)
-vp_test_loader = data.build_dataloader(vp_test, num_workers=num_workers, shuffle=False)
-
-vd_train_loader = data.build_dataloader(vd_train, num_workers=num_workers)
-vd_val_loader = data.build_dataloader(vd_val, num_workers=num_workers, shuffle=False)
-vd_test_loader = data.build_dataloader(vd_test, num_workers=num_workers, shuffle=False)
-
-tk_train_loader = data.build_dataloader(tk_train, num_workers=num_workers)
-tk_val_loader = data.build_dataloader(tk_val, num_workers=num_workers, shuffle=False)
-tk_test_loader = data.build_dataloader(tk_test, num_workers=num_workers, shuffle=False)
-
-mp = nn.BondMessagePassing(depth=3) # Make the mpnn
+#mp = nn.BondMessagePassing(depth=3) # Make the mpnn
 #agg = nn.MeanAggregation() # Aggregation type. Can also do SumAgg. or NormAgg.
 ffn = nn.RegressionFFN()
 
@@ -110,19 +89,12 @@ for epoch in range(500):
     total_loss = 0
     optimizer.zero_grad()
     for task in tasks:
-        loader = None
-        if task == 'vp':
-            loader = vp_train_loader
-            val_loader = vp_val_loader
-        elif task =='vd':
-            loader = vd_train_loader
-            val_loader = vd_val_loader
-        else:
-            loader = tk_train_loader
-            val_loader = tk_val_loader
-        
+        train_loader = train_loaders[task]
+        val_loader = val_loaders[task]
+        test_loader = test_loaders[task]
+
         temp_weights=[w.clone() for w in ffn.parameters()]
-        for batch in loader:
+        for batch in train_loader:
             bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
             fp = fp_mpnn.fingerprint(bmg)
             pred=argforward(temp_weights, fp)
@@ -159,18 +131,13 @@ for task in tasks:
     pred_out = []
     target_out = []
     temp_weights=[w.clone() for w in ffn.parameters()]
-    loader = None
-    if task == 'vp':
-        loader = vp_train_loader
-        test_loader = vp_test_loader
-    elif task =='vd':
-        loader = vd_train_loader
-        test_loader = vd_test_loader
-    else:
-        loader = tk_train_loader
-        test_loader = tk_test_loader
+
+    train_loader = train_loaders[task]
+    val_loader = val_loaders[task]
+    test_loader = test_loaders[task]
+
     
-    for batch in loader:
+    for batch in train_loader:
         for i in range(5):
             bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
             fp = fp_mpnn.fingerprint(bmg)
@@ -204,13 +171,13 @@ for task in tasks:
 
 
 #dict_vp = {'pred_vp':final_preds[0], 'target_vp':final_targets[0]}
-dict_vd = {'pred_vd':final_preds[0], 'target_vd':final_targets[0]}
+#dict_vd = {'pred_vd':final_preds[0], 'target_vd':final_targets[0]}
 #dict_tk = {'pred_tk':final_preds[0], 'target_tk':final_targets[0]}
 
 #vp_out = pd.DataFrame(dict_vp)
-vd_out = pd.DataFrame(dict_vd)
+#vd_out = pd.DataFrame(dict_vd)
 #tk_out = pd.DataFrame(dict_tk)
 
 #vp_out.to_csv('vp.csv')
-vd_out.to_csv('vd.csv')
+#vd_out.to_csv('vd.csv')
 #tk_out.to_csv('tk.csv')
