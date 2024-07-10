@@ -88,8 +88,10 @@ batch_norm = False
 #initialize the model
 #mpnn = models.MPNN(mp, agg, ffn, batch_norm, [nn.metrics.MSEMetric])
 
-fp_mpnn = models.MPNN.load_from_checkpoint('/Users/bhanumamillapalli/Desktop/Current_Work/2024_Research_Project/Models/best.ckpt')
+fp_mpnn = models.MPNN.load_from_checkpoint('/home/bhanu/Documents/Chemprop_Models/default_fingerprint_model/checkpoints/best.ckpt')
+fp_mpnn.to(torch.device("cpu"))
 fp_mpnn.eval()
+
 
 # Define the loss function and optimizer
 criterion = torch.nn.MSELoss(reduction='mean')
@@ -103,6 +105,7 @@ def argforward(weights, inputs):
     return output
 
 # inner optimization loop
+tasks = ['vd']
 for epoch in range(500):
     total_loss = 0
     optimizer.zero_grad()
@@ -200,14 +203,14 @@ for task in tasks:
 
 
 
-dict_vp = {'pred_vp':final_preds[0], 'target_vp':final_targets[0]}
-dict_vd = {'pred_vd':final_preds[1], 'target_vd':final_targets[1]}
-dict_tk = {'pred_tk':final_preds[2], 'target_tk':final_targets[2]}
+#dict_vp = {'pred_vp':final_preds[0], 'target_vp':final_targets[0]}
+dict_vd = {'pred_vd':final_preds[0], 'target_vd':final_targets[0]}
+#dict_tk = {'pred_tk':final_preds[0], 'target_tk':final_targets[0]}
 
-vp_out = pd.DataFrame(dict_vp)
+#vp_out = pd.DataFrame(dict_vp)
 vd_out = pd.DataFrame(dict_vd)
-tk_out = pd.DataFrame(dict_tk)
+#tk_out = pd.DataFrame(dict_tk)
 
-vp_out.to_csv('vp.csv')
+#vp_out.to_csv('vp.csv')
 vd_out.to_csv('vd.csv')
-tk_out.to_csv('tk.csv')
+#tk_out.to_csv('tk.csv')
