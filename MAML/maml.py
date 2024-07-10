@@ -176,16 +176,3 @@ for task in tasks:
 
     filename = str(task) + '.csv'
     df.to_csv(filename)
-
-
-#dict_vp = {'pred_vp':final_preds[0], 'target_vp':final_targets[0]}
-#dict_vd = {'pred_vd':final_preds[0], 'target_vd':final_targets[0]}
-#dict_tk = {'pred_tk':final_preds[0], 'target_tk':final_targets[0]}
-
-#vp_out = pd.DataFrame(dict_vp)
-#vd_out = pd.DataFrame(dict_vd)
-#tk_out = pd.DataFrame(dict_tk)
-
-#vp_out.to_csv('vp.csv')
-#vd_out.to_csv('vd.csv')
-#tk_out.to_csv('tk.csv')
