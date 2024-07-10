@@ -72,6 +72,12 @@ fp_mpnn = models.MPNN.load_from_checkpoint('/home/bhanu/Documents/Chemprop_Model
 fp_mpnn.to(torch.device("cpu"))
 fp_mpnn.eval()
 
+weights=[w.clone() for w in fp_mpnn.parameters()]
+print(len(weights[3]))
+print(fp_mpnn)
+
+
+'''
 
 # Define the loss function and optimizer
 criterion = torch.nn.MSELoss(reduction='mean')
@@ -176,3 +182,4 @@ for task in tasks:
 
     filename = str(task) + '.csv'
     df.to_csv(filename)
+'''
