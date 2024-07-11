@@ -10,6 +10,8 @@ import torch.optim as optim
 import torch.nn.functional as F
 import csv
 from torch import nn as tnn
+import random
+
 
 #DATA GENERATION
 input_path = 'maml_bigdata.csv' # path to your data .csv file
@@ -23,12 +25,19 @@ task_labels = df['task']
 
 #iterable for tasks
 num_tasks = 10
-tasks = range(num_tasks)
+test_tasks = random.sample(range(num_tasks),2)
+tasks = []
+for task in range(num_tasks):
+    if task != test_tasks[0] and task != test_tasks[1]:
+        tasks.append(task)
 
 #create holders for all dataloaders
-train_loaders = []
-val_loaders = []
-test_loaders = []
+train_s_loaders = []
+train_q_loaders = []
+val_s_loaders = []
+val_q_loaders = []
+test_s_loaders = []
+test_q_loaders = []
 featurizer = featurizers.SimpleMoleculeMolGraphFeaturizer()
 
 #separate data by task and put into loaders
@@ -42,22 +51,59 @@ for task in tasks:
     task_data = [data.MoleculeDatapoint.from_smi(smi, y) for smi, y in zip(task_smis, task_targets)]
     mols = [d.mol for d in task_data]
     
+    indices=list(range(50))
+    random.shuffle(indices)
+    train_indices = indices[:40]
+    val_indices = indices[40:]
+
+    train_data, val_data, _ = data.split_data_by_indices(task_data, train_indices, val_indices,None)
+
+    indices=list(range(40))
+    random.shuffle(indices)
+    supp_indices = indices[:32]
+    query_indices = indices[32:]
+
+    supp_data, query_data, _ = data.split_data_by_indices(train_data, supp_indices, query_indices,None)
     
-    #split data
-    train_indices, val_indices, test_indices = data.make_split_indices(mols, "random", (0.4, 0.4, 0.2)) #create split indices
-    train_data, val_data, test_data = data.split_data_by_indices(
-    task_data, train_indices, val_indices, test_indices
-    )
+    supp_dataset = data.MoleculeDataset(supp_data, featurizer)
+    query_dataset = data.MoleculeDataset(query_data, featurizer)
 
-    #create dataset
-    train_dataset = data.MoleculeDataset(train_data, featurizer)
-    val_dataset = data.MoleculeDataset(val_data, featurizer)
-    test_dataset = data.MoleculeDataset(test_data, featurizer)
+    train_s_loaders.append(data.build_dataloader(supp_dataset, num_workers=num_workers,batch_size=8))
+    train_q_loaders.append(data.build_dataloader(query_dataset, num_workers=num_workers,batch_size=8))
 
-    #add to loaders
-    train_loaders.append(data.build_dataloader(train_dataset, num_workers=num_workers,batch_size=1))
-    val_loaders.append(data.build_dataloader(val_dataset, num_workers=num_workers,batch_size=1))
-    test_loaders.append(data.build_dataloader(test_dataset, num_workers=num_workers,batch_size=1))
+    indices=list(range(10))
+    random.shuffle(indices)
+    supp_indices = indices[:8]
+    query_indices = indices[8:]
+
+    supp_data, query_data, _ = data.split_data_by_indices(val_data, supp_indices, query_indices,None)
+    supp_dataset = data.MoleculeDataset(supp_data, featurizer)
+    query_dataset = data.MoleculeDataset(query_data, featurizer)
+
+    val_s_loaders.append(data.build_dataloader(supp_dataset, num_workers=num_workers,batch_size=8))
+    val_q_loaders.append(data.build_dataloader(query_dataset, num_workers=num_workers,batch_size=8))
+
+for task in test_tasks:
+    indices = task_labels == task
+    task_smis = smis.loc[indices]
+    task_targets = targets.loc[indices]
+
+    #create data
+    task_data = [data.MoleculeDatapoint.from_smi(smi, y) for smi, y in zip(task_smis, task_targets)]
+    mols = [d.mol for d in task_data]
+
+    indices=list(range(50))
+    random.shuffle(indices)
+    supp_indices = indices[:40]
+    query_indices = indices[40:]
+
+    supp_data, query_data, _ = data.split_data_by_indices(task_data, supp_indices, query_indices,None)
+    
+    supp_dataset = data.MoleculeDataset(supp_data, featurizer)
+    query_dataset = data.MoleculeDataset(query_data, featurizer)
+
+    test_s_loaders.append(data.build_dataloader(supp_dataset, num_workers=num_workers,batch_size=10))
+    test_q_loaders.append(data.build_dataloader(query_dataset, num_workers=num_workers,batch_size=10))
 
 
 #Create the network
@@ -72,7 +118,6 @@ batch_norm = False
 mpnn = models.MPNN(mp, agg, ffn, batch_norm, [nn.metrics.MSEMetric])
 
 #fp_mpnn = models.MPNN.load_from_checkpoint('/home/bhanu/Documents/Chemprop_Models/default_fingerprint_model/checkpoints/best.ckpt')
-mpnn.to(torch.device("cpu"))
 
 
 def clone_weights(model):
@@ -83,8 +128,21 @@ def clone_weights(model):
 
 
 # Define the loss function and optimizer
+def lr(epoch):
+    scalar = epoch//100
+    outer_lr = 0.0005 / scalar
+    inner_lr = 0.001 / scalar
+
+    return outer_lr, inner_lr
+
+outer_lr = 0.01
+inner_lr = 0.001
+fine_lr = 0.005
+epochs = 300
+finetune_steps = 5
+
 criterion = torch.nn.MSELoss(reduction='mean')
-optimizer = optim.SGD(mpnn.parameters(), lr = 0.001)
+optimizer = optim.SGD(mpnn.parameters(), lr = outer_lr)
 
 def message(H, bmg):
     index_torch = bmg.edge_index[1].unsqueeze(1).repeat(1, H.shape[1])
@@ -131,32 +189,41 @@ def argforward(weights, bmg):
 
     return output
 
+# gpu stuff
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+mpnn.to(device)
+
 
 # inner optimization loop
-for epoch in range(100):
+for epoch in range(epochs):
     total_loss = 0
     optimizer.zero_grad()
-    for task in tasks:
-        train_loader = train_loaders[task]
-        val_loader = val_loaders[task]
-        test_loader = test_loaders[task]
+    for task in range(len(train_s_loaders)):
+        s_loader = train_s_loaders[task]
+        q_loader = train_q_loaders[task]
+
+        val_s_loader = val_s_loaders[task]
+        val_q_loader = val_q_loaders[task]
 
         temp_weights = clone_weights(mpnn)
-        for batch in train_loader:
+        for batch in s_loader:
             bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
-            pred=argforward(temp_weights, bmg)
+            
+            bmg.to(device)
+            pred=argforward(temp_weights, bmg).to(device)
 
-            targets = targets.reshape(-1,1)
-            loss = criterion(pred, targets)
+            targets = targets.reshape(-1,1).to(device)
+            loss = criterion(pred, targets).to(device)
             grads=torch.autograd.grad(loss,temp_weights)
-            temp_weights=[w-0.001*g for w,g in zip(temp_weights,grads)] #temporary update of weights
+            temp_weights=[w-inner_lr*g for w,g in zip(temp_weights,grads)] #temporary update of weights
 
-        for batch in val_loader:
+        for batch in q_loader:
             bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
-            pred=argforward(temp_weights, bmg)
+            bmg.to(device)
+            pred=argforward(temp_weights, bmg).to(device)
 
-            targets = targets.reshape(-1,1)
-            metaloss = criterion(pred, targets)
+            targets = targets.reshape(-1,1).to(device)
+            metaloss = criterion(pred, targets).to(device)
             total_loss += metaloss
 
 
@@ -172,33 +239,36 @@ for epoch in range(100):
 final_preds = []
 final_targets = []
 
-for task in tasks:
+for task in range(len(test_s_loaders)):
     pred_out = []
     target_out = []
     temp_weights=[w.clone() for w in mpnn.parameters()]
 
-    train_loader = train_loaders[task]
-    val_loader = val_loaders[task]
-    test_loader = test_loaders[task]
+    s_loader = train_s_loaders[task]
+    q_loader = train_q_loaders[task]
 
     
-    for batch in train_loader:
-        for i in range(5):
+    for batch in s_loader:
+        for i in range(finetune_steps):
             bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
-            pred=argforward(temp_weights, bmg)
+            bmg.to(device)
+            pred=argforward(temp_weights, bmg).to(device)
 
-            targets = targets.reshape(-1,1)
+            targets = targets.reshape(-1,1).to(device)
             loss = criterion(pred, targets)
             grads=torch.autograd.grad(loss,temp_weights)
-            temp_weights=[w-0.00001*g for w,g in zip(temp_weights,grads)] #temporary update of weights
+            temp_weights=[w-fine_lr*g for w,g in zip(temp_weights,grads)] #temporary update of weights
     
     test_loss = 0
-    for batch in test_loader:
+    for batch in q_loader:
         bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
+        bmg.to(device)
         pred=argforward(temp_weights, bmg)
 
-        targets = targets.reshape(-1,1)
+        targets = targets.reshape(-1,1).to(device)
         test_loss += criterion(pred, targets)
+        pred = pred.cpu()
+        targets = targets.cpu()
         pred_out.extend(pred.detach().numpy())
         target_out.extend(targets.detach().numpy())
 
@@ -213,11 +283,10 @@ for task in tasks:
 
 
 
-for task in tasks:
+for task in range(len(test_tasks)):
     pred_label = 'pred_' + str(task)
     true_label = 'true_' + str(task)
     df = pd.DataFrame({true_label:final_targets[task], pred_label:final_preds[task]})
 
-    filename = str(task) + '.csv'
+    filename = str(test_tasks[task]) + '.csv'
     df.to_csv(filename)
-
