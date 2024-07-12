@@ -25,10 +25,13 @@ task_labels = df['task']
 
 #iterable for tasks
 num_tasks = 10
-test_tasks = random.sample(range(num_tasks),2)
+nontrain = random.sample(range(num_tasks),4)
+test_tasks = nontrain[:2]
+val_tasks = nontrain[2:]
 tasks = []
+
 for task in range(num_tasks):
-    if task != test_tasks[0] and task != test_tasks[1]:
+    if task not in nontrain:
         tasks.append(task)
 
 #create holders for all dataloaders
@@ -50,38 +53,42 @@ for task in tasks:
     #create data
     task_data = [data.MoleculeDatapoint.from_smi(smi, y) for smi, y in zip(task_smis, task_targets)]
     mols = [d.mol for d in task_data]
-    
+
+
     indices=list(range(50))
     random.shuffle(indices)
-    train_indices = indices[:40]
-    val_indices = indices[40:]
+    supp_indices = indices[:40]
+    query_indices = indices[40:]
 
-    train_data, val_data, _ = data.split_data_by_indices(task_data, train_indices, val_indices,None)
-
-    indices=list(range(40))
-    random.shuffle(indices)
-    supp_indices = indices[:32]
-    query_indices = indices[32:]
-
-    supp_data, query_data, _ = data.split_data_by_indices(train_data, supp_indices, query_indices,None)
+    supp_data, query_data, _ = data.split_data_by_indices(task_data, supp_indices, query_indices,None)
     
     supp_dataset = data.MoleculeDataset(supp_data, featurizer)
     query_dataset = data.MoleculeDataset(query_data, featurizer)
 
-    train_s_loaders.append(data.build_dataloader(supp_dataset, num_workers=num_workers,batch_size=8))
-    train_q_loaders.append(data.build_dataloader(query_dataset, num_workers=num_workers,batch_size=8))
+    train_s_loaders.append(data.build_dataloader(supp_dataset, num_workers=num_workers,batch_size=10))
+    train_q_loaders.append(data.build_dataloader(query_dataset, num_workers=num_workers,batch_size=10))
 
-    indices=list(range(10))
+for task in val_tasks:
+    indices = task_labels == task
+    task_smis = smis.loc[indices]
+    task_targets = targets.loc[indices]
+
+    #create data
+    task_data = [data.MoleculeDatapoint.from_smi(smi, y) for smi, y in zip(task_smis, task_targets)]
+    mols = [d.mol for d in task_data]
+
+    indices=list(range(50))
     random.shuffle(indices)
-    supp_indices = indices[:8]
-    query_indices = indices[8:]
+    supp_indices = indices[:40]
+    query_indices = indices[40:]
 
-    supp_data, query_data, _ = data.split_data_by_indices(val_data, supp_indices, query_indices,None)
+    supp_data, query_data, _ = data.split_data_by_indices(task_data, supp_indices, query_indices,None)
+    
     supp_dataset = data.MoleculeDataset(supp_data, featurizer)
     query_dataset = data.MoleculeDataset(query_data, featurizer)
 
-    val_s_loaders.append(data.build_dataloader(supp_dataset, num_workers=num_workers,batch_size=8))
-    val_q_loaders.append(data.build_dataloader(query_dataset, num_workers=num_workers,batch_size=8))
+    val_s_loaders.append(data.build_dataloader(supp_dataset, num_workers=num_workers,batch_size=10))
+    val_q_loaders.append(data.build_dataloader(query_dataset, num_workers=num_workers,batch_size=10))
 
 for task in test_tasks:
     indices = task_labels == task
@@ -136,7 +143,7 @@ def lr(epoch):
     return outer_lr, inner_lr
 
 outer_lr = 0.01
-inner_lr = 0.001
+inner_lr = 0.01
 fine_lr = 0.005
 epochs = 300
 finetune_steps = 5
@@ -197,15 +204,16 @@ mpnn.to(device)
 # inner optimization loop
 for epoch in range(epochs):
     total_loss = 0
+    val_loss = 0
     optimizer.zero_grad()
     for task in range(len(train_s_loaders)):
         s_loader = train_s_loaders[task]
         q_loader = train_q_loaders[task]
 
-        val_s_loader = val_s_loaders[task]
-        val_q_loader = val_q_loaders[task]
+        val_loader = val_loaders[task]
 
         temp_weights = clone_weights(mpnn)
+        
         for batch in s_loader:
             bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
             
@@ -225,6 +233,15 @@ for epoch in range(epochs):
             targets = targets.reshape(-1,1).to(device)
             metaloss = criterion(pred, targets).to(device)
             total_loss += metaloss
+        
+        for batch in val_loader:
+            bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
+            bmg.to(device)
+            pred=argforward(temp_weights, bmg).to(device)
+
+            targets = targets.reshape(-1,1).to(device)
+            val_metaloss = criterion(pred, targets).to(device)
+            val_loss += val_metaloss
 
 
     metagrads=torch.autograd.grad(total_loss,mpnn.parameters())
@@ -233,7 +250,7 @@ for epoch in range(epochs):
         w.grad=g
     
     optimizer.step()
-    print(epoch, total_loss)
+    print("{0} Train Loss: {1:.3f} Val Loss: {2:.3f}".format(epoch, total_loss.detach().numpy() / 8, val_loss.detach().numpy() / 10))
 
 
 final_preds = []
