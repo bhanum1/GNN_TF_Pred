@@ -263,11 +263,17 @@ for file in os.scandir(directory):
         label1 = nums[0] + "_" + nums
         label2 = nums[1] + "_" + nums
 
-        srcc1 = scipy.stats.spearmanr(df['true_' + nums[0]], df['pred_' + nums[0]])
-        srcc2 = scipy.stats.spearmanr(df['true_' + nums[1]], df['pred_' + nums[1]])
+        #rcc1 = scipy.stats.spearmanr(df['true_' + nums[0]], df['pred_' + nums[0]])
+        #srcc2 = scipy.stats.spearmanr(df['true_' + nums[1]], df['pred_' + nums[1]])
 
-        result_dict[label1] = srcc1[0]
-        result_dict[label2] = srcc2[0]
+        MAE1 = abs(df['true_' + nums[0]]-df['pred_'+nums[0]])
+        MAE2 = abs(df['true_' + nums[1]]-df['pred_'+nums[2]])
+
+        #result_dict[label1] = srcc1[0]
+        #result_dict[label2] = srcc2[0]
+
+        result_dict[label1] = MAE1
+        result_dict[label2] = MAE2
 
 df = pd.DataFrame.from_dict(result_dict, orient='index', columns = ['SRCC'])
 
