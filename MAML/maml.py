@@ -11,7 +11,7 @@ from itertools import combinations
 import os
 import scipy
 
-
+'''
 agg = nn.MeanAggregation() # Aggregation type. Can also do SumAgg. or NormAgg.
 
 def generate_data(csv, test):
@@ -247,7 +247,7 @@ for combo in list(comb):
     loaders = generate_data("maml_bigdata.csv", combo)
     outer_loop(mpnn, epochs, optimizer, loaders[0], inner_lr)
     eval(mpnn, fine_lr, loaders[1], combo)
-
+'''
 
 directory = 'results'
 
@@ -266,8 +266,9 @@ for file in os.scandir(directory):
         #rcc1 = scipy.stats.spearmanr(df['true_' + nums[0]], df['pred_' + nums[0]])
         #srcc2 = scipy.stats.spearmanr(df['true_' + nums[1]], df['pred_' + nums[1]])
 
-        MAE1 = abs(df['true_' + nums[0]]-df['pred_'+nums[0]])
-        MAE2 = abs(df['true_' + nums[1]]-df['pred_'+nums[2]])
+        MAE1 = np.average(abs(df['true_' + nums[0]]-df['pred_'+nums[0]]))
+        MAE2 = np.average(abs(df['true_' + nums[1]]-df['pred_'+nums[1]]))
+
 
         #result_dict[label1] = srcc1[0]
         #result_dict[label2] = srcc2[0]
@@ -275,7 +276,7 @@ for file in os.scandir(directory):
         result_dict[label1] = MAE1
         result_dict[label2] = MAE2
 
-df = pd.DataFrame.from_dict(result_dict, orient='index', columns = ['SRCC'])
+df = pd.DataFrame.from_dict(result_dict, orient='index', columns = ['MAE'])
 
 filename = 'test.csv'
 df.to_csv(filename)
