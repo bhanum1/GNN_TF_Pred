@@ -53,8 +53,8 @@ def generate_data(csv, test):
 
         #add to loader list
         if task in test:
-            test_s_loaders.append(data.build_dataloader(supp_dataset, num_workers=num_workers,batch_size=40))
-            test_q_loaders.append(data.build_dataloader(query_dataset, num_workers=num_workers,batch_size=40))
+            test_s_loaders.append(data.build_dataloader(supp_dataset, num_workers=num_workers,batch_size=10))
+            test_q_loaders.append(data.build_dataloader(query_dataset, num_workers=num_workers,batch_size=10))
         else:
             train_s_loaders.append(data.build_dataloader(supp_dataset, num_workers=num_workers,batch_size=10))
             train_q_loaders.append(data.build_dataloader(query_dataset, num_workers=num_workers,batch_size=10))
@@ -231,9 +231,9 @@ def build_model():
 # Define the loss function and optimizer
 outer_lr = 0.0001
 inner_lr = 0.0001
-fine_lr = 0.0001
-fine_tune_steps = 3
-epochs = 5000
+fine_lr = 0.00005
+fine_tune_steps = 2
+epochs = 2000
 
 criterion = torch.nn.MSELoss(reduction='mean')
 
