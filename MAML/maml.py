@@ -11,7 +11,7 @@ from itertools import combinations
 import os
 import scipy
 
-'''
+
 agg = nn.MeanAggregation() # Aggregation type. Can also do SumAgg. or NormAgg.
 
 def generate_data(csv, test):
@@ -43,8 +43,8 @@ def generate_data(csv, test):
 
         indices=list(range(50))
         random.shuffle(indices)
-        supp_indices = indices[:40]
-        query_indices = indices[40:]
+        supp_indices = indices[:10]
+        query_indices = indices[10:]
 
         supp_data, query_data, _ = data.split_data_by_indices(task_data, supp_indices, query_indices,None)
         
@@ -53,8 +53,8 @@ def generate_data(csv, test):
 
         #add to loader list
         if task in test:
-            test_s_loaders.append(data.build_dataloader(supp_dataset, num_workers=num_workers,batch_size=10))
-            test_q_loaders.append(data.build_dataloader(query_dataset, num_workers=num_workers,batch_size=10))
+            test_s_loaders.append(data.build_dataloader(supp_dataset, num_workers=num_workers,batch_size=40))
+            test_q_loaders.append(data.build_dataloader(query_dataset, num_workers=num_workers,batch_size=40))
         else:
             train_s_loaders.append(data.build_dataloader(supp_dataset, num_workers=num_workers,batch_size=10))
             train_q_loaders.append(data.build_dataloader(query_dataset, num_workers=num_workers,batch_size=10))
@@ -130,13 +130,15 @@ def inner_loop(model, inner_lr, train_loaders, grad_steps, eval= False):
             grads=torch.autograd.grad(loss,temp_weights)
             temp_weights=[w-inner_lr*g for w,g in zip(temp_weights,grads)] #temporary update of weights
 
+
+    metaloss = 0
     for batch in q_loader:
         bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
         bmg.to(device)
         pred=argforward(temp_weights, bmg).to(device)
 
         targets = targets.reshape(-1,1).to(device)
-        metaloss = criterion(pred, targets).to(device)
+        metaloss += criterion(pred, targets).to(device)
 
     if not eval:
         return metaloss
@@ -147,7 +149,11 @@ def outer_loop(model, num_epochs, optimizer, train_loaders, inner_lr):
     for epoch in range(num_epochs):
         total_loss = 0
         optimizer.zero_grad()
-        for task in range(len(train_loaders[0])):
+
+        num_tasks = 4
+        task_sample = random.sample(range(len(train_loaders[0])), num_tasks)
+
+        for task in task_sample:
             s_loader, q_loader = train_loaders[0][task], train_loaders[1][task]
 
             metaloss = inner_loop(model,inner_lr, [s_loader, q_loader],1)
@@ -166,21 +172,19 @@ def eval(model, fine_lr, test_loaders, test_tasks):
     final_preds = []
     final_targets = []
 
-    total_loss = 0
-
     for task in range(len(test_loaders[0])):
         pred_out = []
         target_out = []
         s_loader, q_loader = test_loaders[0][task], test_loaders[1][task]
 
-        test_loss, pred, target = inner_loop(model, fine_lr, [s_loader, q_loader], 20, True)
-        pred_out.extend(pred.cpu().detach().numpy())
-        target_out.extend(target.cpu().detach().numpy())
-        
-        total_loss += test_loss
+        test_loss, pred, target = inner_loop(model, fine_lr, [s_loader, q_loader], fine_tune_steps, True)
+
+        pred,target = pred.cpu().detach().numpy(), target.cpu().detach().numpy()
+        pred_out.extend(pred)
+        target_out.extend(target)
 
 
-        print(task, total_loss)
+        print(task, test_loss.cpu().detach().numpy(), round(scipy.stats.spearmanr(pred, target)[0],3))
 
         for i in range(len(pred_out)):
             pred_out[i] = pred_out[i][0]
@@ -225,10 +229,11 @@ def build_model():
 
 
 # Define the loss function and optimizer
-outer_lr = 0.00005
-inner_lr = 0.0005
-fine_lr = 0.001
-epochs = 500
+outer_lr = 0.0001
+inner_lr = 0.0001
+fine_lr = 0.0001
+fine_tune_steps = 3
+epochs = 5000
 
 criterion = torch.nn.MSELoss(reduction='mean')
 
@@ -247,7 +252,7 @@ for combo in list(comb):
     loaders = generate_data("maml_bigdata.csv", combo)
     outer_loop(mpnn, epochs, optimizer, loaders[0], inner_lr)
     eval(mpnn, fine_lr, loaders[1], combo)
-'''
+
 
 directory = 'results'
 
