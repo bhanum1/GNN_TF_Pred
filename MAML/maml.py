@@ -96,7 +96,7 @@ def eval(model, fine_lr, fine_tune_steps, test_tasks, m_support, k_query):
         target_out.extend(target)
 
         
-        print(task, np.average(abs(np.array(pred_out) - np.array(target_out))), round(scipy.stats.spearmanr(pred, target)[0],3))
+        print("Task:{0} MAE:{0:.3f}, R^2:{0:.3f}".format(task, np.average(abs(np.array(pred_out) - np.array(target_out))), round(scipy.stats.spearmanr(pred, target)[0],3)))
 
         for i in range(len(pred_out)):
             pred_out[i] = pred_out[i][0]
