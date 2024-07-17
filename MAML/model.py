@@ -21,7 +21,7 @@ def build_model():
 def clone_weights(model):
     #GNN Weights
     weights=[w.clone() for w in model.parameters()]
-    
+
     return weights
 
 def message(H, bmg):
@@ -61,7 +61,9 @@ def argforward(weights, bmg):
             0, index_torch, H, reduce="sum", include_self=False
         )
     H_v = finalize(M,bmg.V,weights[2], weights[3])
-    H = nn.MeanAggregation(H_v, bmg.batch)
+
+    agg = nn.MeanAggregation()
+    H = agg(H_v, bmg.batch)
 
     output = F.linear(H,weights[4],weights[5])
     output = F.relu(output)

@@ -59,8 +59,6 @@ def outer_loop(model, inner_lr, tasks, m_support, k_query):
     
     return total_loss
 
-
-
 def train(model, num_epochs, optimizer, num_train, train_tasks, inner_lr, m_support, k_query):
     #training loop
     for epoch in range(num_epochs):
@@ -81,13 +79,13 @@ def train(model, num_epochs, optimizer, num_train, train_tasks, inner_lr, m_supp
         optimizer.step()
 
         if epoch == 0 or (epoch+1) % 100 == 0:
-            print("{0} Train Loss: {1:.3f}".format(epoch, metaloss.cpu().detach().numpy() / len()))
+            print("{0} Train Loss: {1:.3f}".format(epoch, metaloss.cpu().detach().numpy() / len(train_tasks)))
 
 def eval(model, fine_lr, fine_tune_steps, test_tasks, m_support, k_query):
     final_preds = []
     final_targets = []
 
-    for task in range(test_tasks):
+    for task in test_tasks:
         pred_out = []
         target_out = []
 
@@ -137,7 +135,7 @@ criterion = torch.nn.MSELoss(reduction='mean')
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Train all combinations
-comb = combinations(range(10),2)
+comb = combinations(range(15),3)
 
 for combo in list(comb):
     #initialize the model
