@@ -164,7 +164,7 @@ directory = 'results'
 results = []
 result_dict = dict()
 for file in os.scandir(directory):
-    nums = file.path[-6:-4]
+    nums = file.path[-7:-4]
 
     if nums.isnumeric():
         df = pd.read_csv(file)
@@ -178,6 +178,7 @@ for file in os.scandir(directory):
 
         MAE1 = np.average(abs(df['true_' + nums[0]]-df['pred_'+nums[0]]))
         MAE2 = np.average(abs(df['true_' + nums[1]]-df['pred_'+nums[1]]))
+        MAE3 = np.average(abs(df['true_' + nums[2]]-df['pred_'+nums[2]]))
 
 
         #result_dict[label1] = srcc1[0]
@@ -185,6 +186,7 @@ for file in os.scandir(directory):
 
         result_dict[label1] = MAE1
         result_dict[label2] = MAE2
+        result_dict[label3] = MAE3
 
 df = pd.DataFrame.from_dict(result_dict, orient='index', columns = ['MAE'])
 
