@@ -126,7 +126,7 @@ fine_lr = 0.00005
 fine_tune_steps = 2
 epochs = 20
 m_support = 5
-k_query = 5
+k_query = 20
 num_train_sample = 3
 
 criterion = torch.nn.MSELoss(reduction='mean')
