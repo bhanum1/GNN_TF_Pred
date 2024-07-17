@@ -57,7 +57,7 @@ def outer_loop(model, inner_lr, tasks, m_support, k_query):
         metaloss = inner_loop(model,inner_lr, task, grad_steps=1 ,m_support=m_support, k_query=k_query)
         total_loss+= metaloss
     
-    return total_loss
+    return total_loss / len(tasks)
 
 def train(model, num_epochs, optimizer, num_train, train_tasks, inner_lr, m_support, k_query):
     #training loop
@@ -141,7 +141,6 @@ combos = random.sample(comb, 10)
 
 
 for combo in combos:
-    print(combo)
     #initialize the model
     mpnn = build_model()
     mpnn.to(device)
