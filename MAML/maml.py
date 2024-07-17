@@ -15,19 +15,19 @@ from data import generate_data
 
 datafile = "maml_final.csv"
 
-def inner_loop(model, inner_lr, task, grad_steps, m_support, k_query, eval= False):
+def inner_loop(model, inner_lr, task, steps, m_support, k_query, test_indices= None):
     temp_weights = clone_weights(model) #clone weights
 
     #get loaders with appropriate number of datapoints
-    s_loader, q_loader = generate_data(datafile,task, m_support, k_query)
-        
-    # train on support data
-    for batch in s_loader:
-        bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
-        bmg.to(device)
+    s_loader, q_loader = generate_data(datafile,task, m_support, k_query, test_indices)
 
-        # Gradient descent a defined number of times
-        for i in range(grad_steps):
+    for i in range(len(steps)): # iterate
+        # train on support data
+        for batch in s_loader:
+            bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
+            bmg.to(device)
+
+            # Gradient descent
             pred=argforward(temp_weights, bmg).to(device)
             targets = targets.reshape(-1,1).to(device)
 
@@ -46,7 +46,7 @@ def inner_loop(model, inner_lr, task, grad_steps, m_support, k_query, eval= Fals
         targets = targets.reshape(-1,1).to(device)
         metaloss += criterion(pred, targets).to(device)
 
-    if not eval:
+    if test_indices is None:
         return metaloss
     else:
         return metaloss, pred, targets
@@ -79,24 +79,25 @@ def train(model, num_epochs, optimizer, num_train, train_tasks, inner_lr, m_supp
         optimizer.step()
 
         if epoch == 0 or (epoch+1) % 100 == 0:
-            print("{0} Train Loss: {1:.3f}".format(epoch, metaloss.cpu().detach().numpy() / len(train_tasks)))
+            print("{0} Train Loss: {1:.3f}".format(epoch, metaloss.cpu().detach().numpy()))
 
-def eval(model, fine_lr, fine_tune_steps, test_tasks, m_support, k_query):
+def eval(model, fine_lr, fine_tune_steps, test_tasks, m_support):
     final_preds = []
     final_targets = []
-
+    k_query = 50 - m_support
+    test_indices = random.sample(range(50), 10)
     for task in test_tasks:
         pred_out = []
         target_out = []
 
-        test_loss, pred, target = inner_loop(model, fine_lr, task, fine_tune_steps, m_support, k_query, True)
+        test_loss, pred, target = inner_loop(model, fine_lr, task, fine_tune_steps, m_support, k_query, test_indices)
 
         pred,target = pred.cpu().detach().numpy(), target.cpu().detach().numpy()
         pred_out.extend(pred)
         target_out.extend(target)
 
         
-        print("Task:{0} MAE:{0:.3f}, R^2:{0:.3f}".format(task, np.average(abs(np.array(pred_out) - np.array(target_out))), round(scipy.stats.spearmanr(pred, target)[0],3)))
+        print("Task:{0} MAE:{1:.3f}, R^2:{1:.3f}".format(task, np.average(abs(np.array(pred_out) - np.array(target_out))), round(scipy.stats.spearmanr(pred, target)[0],3)))
 
         for i in range(len(pred_out)):
             pred_out[i] = pred_out[i][0]
@@ -124,10 +125,10 @@ def eval(model, fine_lr, fine_tune_steps, test_tasks, m_support, k_query):
 meta_lr = 0.0001
 inner_lr = 0.0001
 fine_lr = 0.0001
-fine_tune_steps = 1
+fine_tune_steps = 20
 epochs = 5000
 m_support = 5
-k_query = 20
+k_query = 25
 num_train_sample = 3
 
 criterion = torch.nn.MSELoss(reduction='mean')
@@ -155,7 +156,7 @@ for combo in combos:
 
 
     train(mpnn, epochs, optimizer, num_train_sample,train_tasks, inner_lr,m_support,k_query)
-    eval(mpnn, fine_lr, fine_tune_steps, combo, m_support, k_query)
+    eval(mpnn, fine_lr, fine_tune_steps, train_tasks, m_support)
 
 
 directory = 'results'
