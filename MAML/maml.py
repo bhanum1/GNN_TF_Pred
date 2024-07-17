@@ -115,7 +115,7 @@ def eval(model, fine_lr, fine_tune_steps, test_tasks, m_support, k_query):
 
     df = pd.DataFrame(out_dict)
 
-    filename = 'results/' + str(test_tasks[0]) + str(test_tasks[1]) + '.csv'
+    filename = 'results/' + str(test_tasks[0]) + "_" + str(test_tasks[1]) + "_" + str(test_tasks[2]) + '.csv'
     df.to_csv(filename)
 
 
@@ -135,9 +135,13 @@ criterion = torch.nn.MSELoss(reduction='mean')
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Train all combinations
-comb = combinations(range(15),3)
+comb = list(combinations(range(15),3))
+combos = random.sample(comb, 10)
 
-for combo in list(comb):
+
+
+for combo in combos:
+    print(combo)
     #initialize the model
     mpnn = build_model()
     mpnn.to(device)
@@ -167,6 +171,7 @@ for file in os.scandir(directory):
 
         label1 = nums[0] + "_" + nums
         label2 = nums[1] + "_" + nums
+        label3 = nums[2] + "_" + nums
 
         #rcc1 = scipy.stats.spearmanr(df['true_' + nums[0]], df['pred_' + nums[0]])
         #srcc2 = scipy.stats.spearmanr(df['true_' + nums[1]], df['pred_' + nums[1]])
