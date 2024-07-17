@@ -10,127 +10,33 @@ import random
 from itertools import combinations
 import os
 import scipy
+from model import *
+from data import generate_data
 
+datafile = "maml_final.csv"
 
-agg = nn.MeanAggregation() # Aggregation type. Can also do SumAgg. or NormAgg.
+def inner_loop(model, inner_lr, task, grad_steps, m_support, k_query, eval= False):
+    temp_weights = clone_weights(model) #clone weights
 
-def generate_data(csv, test):
-    input_path = csv # path to your data .csv file
-    df = pd.read_csv(input_path) #convert to dataframe
-    num_workers = 0 # number of workers for dataloader. 0 means using main process for data loading
-
-    #get columns
-    smis = df['smiles']
-    targets = df['target']
-    task_labels = df['task']
-
-    #create holders for all dataloaders
-    train_s_loaders = []
-    train_q_loaders = []
-    test_s_loaders = []
-    test_q_loaders = []
-    featurizer = featurizers.SimpleMoleculeMolGraphFeaturizer()
-
-    for task in range(10):
-        indices = task_labels == task
-        task_smis = smis.loc[indices]
-        task_targets = targets.loc[indices]
-
-        #create data
-        task_data = [data.MoleculeDatapoint.from_smi(smi, y) for smi, y in zip(task_smis, task_targets)]
-        mols = [d.mol for d in task_data]
-
-
-        indices=list(range(50))
-        random.shuffle(indices)
-        supp_indices = indices[:10]
-        query_indices = indices[10:]
-
-        supp_data, query_data, _ = data.split_data_by_indices(task_data, supp_indices, query_indices,None)
+    #get loaders with appropriate number of datapoints
+    s_loader, q_loader = generate_data(datafile,task, m_support, k_query)
         
-        supp_dataset = data.MoleculeDataset(supp_data, featurizer)
-        query_dataset = data.MoleculeDataset(query_data, featurizer)
-
-        #add to loader list
-        if task in test:
-            test_s_loaders.append(data.build_dataloader(supp_dataset, num_workers=num_workers,batch_size=10))
-            test_q_loaders.append(data.build_dataloader(query_dataset, num_workers=num_workers,batch_size=10))
-        else:
-            train_s_loaders.append(data.build_dataloader(supp_dataset, num_workers=num_workers,batch_size=10))
-            train_q_loaders.append(data.build_dataloader(query_dataset, num_workers=num_workers,batch_size=10))
-        
-    return [(train_s_loaders, train_q_loaders), (test_s_loaders, test_q_loaders)]
-
-
-def clone_weights(model):
-    #GNN Weights
-    weights=[w.clone() for w in model.parameters()]
-    
-    return weights
-
-def message(H, bmg):
-    index_torch = bmg.edge_index[1].unsqueeze(1).repeat(1, H.shape[1])
-    M_all = torch.zeros(len(bmg.V), H.shape[1], dtype=H.dtype, device=H.device).scatter_reduce_(
-        0, index_torch, H, reduce="sum", include_self=False
-    )[bmg.edge_index[0]]
-    M_rev = H[bmg.rev_edge_index]
-
-    return M_all - M_rev
-
-def update(M_t, H_0, weights):
-    """Calcualte the updated hidden for each edge"""
-    H_t = F.linear(M_t, weights, None)
-    H_t = F.relu(H_0 + H_t)
-
-    return H_t
-
-def finalize(M, V, weights, biases):
-    H = F.linear(torch.cat((V, M), dim=1), weights, biases)  # V x d_o
-    H = F.relu(H)
-
-    return H
-
-# Output without using model
-def argforward(weights, bmg):
-    H_0 = F.linear(torch.cat([bmg.V[bmg.edge_index[0]],bmg.E],dim=1), weights[0],None)
-    H = F.relu(H_0)
-
-    for i in range(3):
-        M = message(H,bmg)
-        H = update(M,H_0, weights[1])
-
-
-    index_torch = bmg.edge_index[1].unsqueeze(1).repeat(1, H.shape[1])
-    M = torch.zeros(len(bmg.V), H.shape[1], dtype=H.dtype, device=H.device).scatter_reduce_(
-            0, index_torch, H, reduce="sum", include_self=False
-        )
-    H_v = finalize(M,bmg.V,weights[2], weights[3])
-    H = agg(H_v, bmg.batch)
-
-    output = F.linear(H,weights[4],weights[5])
-    output = F.relu(output)
-    output = F.linear(output,weights[6],weights[7])
-
-    return output
-
-def inner_loop(model, inner_lr, train_loaders, grad_steps, eval= False):
-    s_loader, q_loader = train_loaders
-    
-    temp_weights = clone_weights(model)
-        
+    # train on support data
     for batch in s_loader:
         bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
-        
         bmg.to(device)
+
+        # Gradient descent a defined number of times
         for i in range(grad_steps):
             pred=argforward(temp_weights, bmg).to(device)
-
             targets = targets.reshape(-1,1).to(device)
-            loss = criterion(pred, targets).to(device)
+
+            loss = criterion(pred, targets).to(device) #MSE
+
             grads=torch.autograd.grad(loss,temp_weights)
             temp_weights=[w-inner_lr*g for w,g in zip(temp_weights,grads)] #temporary update of weights
 
-
+    #Calculate metaloss on query data
     metaloss = 0
     for batch in q_loader:
         bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
@@ -145,44 +51,51 @@ def inner_loop(model, inner_lr, train_loaders, grad_steps, eval= False):
     else:
         return metaloss, pred, targets
 
-def outer_loop(model, num_epochs, optimizer, train_loaders, inner_lr):
+def outer_loop(model, inner_lr, tasks, m_support, k_query):
+    total_loss = 0
+    for task in tasks:
+        metaloss = inner_loop(model,inner_lr, task, grad_steps=1 ,m_support=m_support, k_query=k_query)
+        total_loss+= metaloss
+    
+    return total_loss
+
+
+
+def train(model, num_epochs, optimizer, num_train, train_tasks, inner_lr, m_support, k_query):
+    #training loop
     for epoch in range(num_epochs):
-        total_loss = 0
         optimizer.zero_grad()
 
-        num_tasks = 4
-        task_sample = random.sample(range(len(train_loaders[0])), num_tasks)
+        #sample collection of tasks to train on
+        task_sample = random.sample(train_tasks, num_train)
 
-        for task in task_sample:
-            s_loader, q_loader = train_loaders[0][task], train_loaders[1][task]
+        #run loops and get metaloss
+        metaloss = outer_loop(model, inner_lr, task_sample, m_support, k_query)
 
-            metaloss = inner_loop(model,inner_lr, [s_loader, q_loader],1)
-            total_loss+= metaloss
-        
-        metagrads=torch.autograd.grad(total_loss,model.parameters())
+        #backpropagate
+        metagrads=torch.autograd.grad(metaloss,model.parameters())
         #important step
         for w,g in zip(model.parameters(),metagrads):
             w.grad=g
         
         optimizer.step()
-        if epoch == 0 or (epoch+1) % 100 == 0:
-            print("{0} Train Loss: {1:.3f}".format(epoch, total_loss.cpu().detach().numpy() / 8))
 
-def eval(model, fine_lr, test_loaders, test_tasks):
+        if epoch == 0 or (epoch+1) % 100 == 0:
+            print("{0} Train Loss: {1:.3f}".format(epoch, metaloss.cpu().detach().numpy() / len()))
+
+def eval(model, fine_lr, fine_tune_steps, test_tasks, m_support, k_query):
     final_preds = []
     final_targets = []
 
-    for task in range(len(test_loaders[0])):
+    for task in range(test_tasks):
         pred_out = []
         target_out = []
-        s_loader, q_loader = test_loaders[0][task], test_loaders[1][task]
 
-        test_loss, pred, target = inner_loop(model, fine_lr, [s_loader, q_loader], fine_tune_steps, True)
+        test_loss, pred, target = inner_loop(model, fine_lr, task, fine_tune_steps, m_support, k_query, True)
 
         pred,target = pred.cpu().detach().numpy(), target.cpu().detach().numpy()
         pred_out.extend(pred)
         target_out.extend(target)
-
 
         print(task, test_loss.cpu().detach().numpy(), round(scipy.stats.spearmanr(pred, target)[0],3))
 
@@ -208,50 +121,39 @@ def eval(model, fine_lr, test_loaders, test_tasks):
     df.to_csv(filename)
 
 
-loaders = generate_data("maml_bigdata.csv", [0,1])
-
-
-
-def build_model():
-        
-    #Create the network
-    mp = nn.BondMessagePassing(depth=3) # Make the gnn
-    agg = nn.MeanAggregation() # Aggregation type. Can also do SumAgg. or NormAgg.
-    ffn = nn.RegressionFFN() # regression head
-
-    # I haven't experimented with this at all, not sure if it will affect the SSL
-    batch_norm = False
-
-    #initialize the model
-    mpnn = models.MPNN(mp, agg, ffn, batch_norm, [nn.metrics.MSEMetric])
-
-    return mpnn
-
-
 # Define the loss function and optimizer
-outer_lr = 0.0001
+meta_lr = 0.0001
 inner_lr = 0.0001
 fine_lr = 0.00005
 fine_tune_steps = 2
-epochs = 2000
+epochs = 20
+m_support = 5
+k_query = 5
+num_train_sample = 3
 
 criterion = torch.nn.MSELoss(reduction='mean')
 
 # gpu stuff
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-
+# Train all combinations
 comb = combinations(range(10),2)
 
 for combo in list(comb):
     #initialize the model
     mpnn = build_model()
     mpnn.to(device)
-    optimizer = optim.Adam(mpnn.parameters(), lr = outer_lr)
+    optimizer = optim.Adam(mpnn.parameters(), lr = meta_lr)
+    
+    #create list of train tasks
+    train_tasks = []
+    for i in range(15):
+        if i not in combo:
+            train_tasks.append(i)
 
-    loaders = generate_data("maml_bigdata.csv", combo)
-    outer_loop(mpnn, epochs, optimizer, loaders[0], inner_lr)
-    eval(mpnn, fine_lr, loaders[1], combo)
+
+    train(mpnn, epochs, optimizer, num_train_sample,train_tasks, inner_lr,m_support,k_query)
+    eval(mpnn, fine_lr, fine_tune_steps, combo, m_support, k_query)
 
 
 directory = 'results'
