@@ -95,7 +95,8 @@ def eval(model, fine_lr, fine_tune_steps, test_tasks, m_support, k_query):
         pred_out.extend(pred)
         target_out.extend(target)
 
-        print(task, test_loss.cpu().detach().numpy(), round(scipy.stats.spearmanr(pred, target)[0],3))
+        
+        print(task, np.average(abs(np.array(pred_out) - np.array(target_out))), round(scipy.stats.spearmanr(pred, target)[0],3))
 
         for i in range(len(pred_out)):
             pred_out[i] = pred_out[i][0]
@@ -122,9 +123,9 @@ def eval(model, fine_lr, fine_tune_steps, test_tasks, m_support, k_query):
 # Define the loss function and optimizer
 meta_lr = 0.0001
 inner_lr = 0.0001
-fine_lr = 0.00005
-fine_tune_steps = 2
-epochs = 500
+fine_lr = 0.0001
+fine_tune_steps = 1
+epochs = 5000
 m_support = 5
 k_query = 20
 num_train_sample = 3
