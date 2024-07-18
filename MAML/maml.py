@@ -52,6 +52,7 @@ def inner_loop(model, inner_lr, task, steps, m_support, k_query, test_indices= N
         for batch in test_loader:
             bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
             bmg.to(device)
+
             pred=argforward(temp_weights, bmg).to(device)
 
             targets = targets.reshape(-1,1).to(device)
@@ -92,7 +93,6 @@ def eval(model, optimizer, fine_lr, fine_tune_steps, test_tasks, m_support, k_qu
     final_preds = []
     final_targets = []
 
-    k_query = 25
     for task in test_tasks:
         test_indices = random.sample(range(50), 10)
         pred_out = []
@@ -173,7 +173,7 @@ for combo in combos:
 
 
     train(mpnn, epochs, optimizer, num_train_sample,train_tasks, inner_lr,m_support,k_query)
-    eval(mpnn, optimizer, fine_lr, fine_tune_steps, combo, m_support=30, k_query=10, fine_tune_epochs=fine_tune_epochs)
+    eval(mpnn, optimizer, fine_lr, fine_tune_steps, combo, m_support=m_support, k_query=k_query, fine_tune_epochs=fine_tune_epochs)
 
 
 directory = 'results'
