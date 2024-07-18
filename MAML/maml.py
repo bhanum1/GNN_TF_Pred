@@ -88,7 +88,7 @@ def train(model, num_epochs, optimizer, num_train, train_tasks, inner_lr, m_supp
         if epoch == 0 or (epoch+1) % 100 == 0:
             print("{0} Train Loss: {1:.3f}".format(epoch, metaloss.cpu().detach().numpy()))
 
-def eval(model, optimizer, fine_lr, fine_tune_steps, test_tasks, m_support, k_query):
+def eval(model, optimizer, fine_lr, fine_tune_steps, test_tasks, m_support, k_query, fine_tune_epochs):
     final_preds = []
     final_targets = []
 
@@ -98,7 +98,7 @@ def eval(model, optimizer, fine_lr, fine_tune_steps, test_tasks, m_support, k_qu
         pred_out = []
         target_out = []
 
-        for i in range(20):
+        for i in range(fine_tune_epochs):
             metaloss, test_loss, pred, target = inner_loop(model, fine_lr, task, fine_tune_steps, m_support, k_query, test_indices)
             metagrads=torch.autograd.grad(metaloss,model.parameters())
 
@@ -143,6 +143,7 @@ inner_lr = 0.0001
 fine_lr = 1E-7
 fine_tune_steps = 1
 epochs = 5000
+fine_tune_epochs = 20
 m_support = 5
 k_query = 25
 num_train_sample = 3
@@ -172,7 +173,7 @@ for combo in combos:
 
 
     train(mpnn, epochs, optimizer, num_train_sample,train_tasks, inner_lr,m_support,k_query)
-    eval(mpnn, optimizer, fine_lr, fine_tune_steps, combo, m_support=30, k_query=10)
+    eval(mpnn, optimizer, fine_lr, fine_tune_steps, combo, m_support=30, k_query=10, fine_tune_epochs=fine_tune_epochs)
 
 
 directory = 'results'
