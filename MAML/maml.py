@@ -19,15 +19,14 @@ def inner_loop(model, inner_lr, task, steps, m_support, k_query, test_indices= N
     temp_weights = clone_weights(model) #clone weights
 
     #get loaders with appropriate number of datapoints
-    s_loader, q_loader = generate_data(datafile,task, m_support, k_query, test_indices)
+    s_loader, q_loader, test_loader = generate_data(datafile,task, m_support, k_query, test_indices)
+    # train on support data
+    for batch in s_loader:
+        bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
+        bmg.to(device)
 
-    for i in range(len(steps)): # iterate
-        # train on support data
-        for batch in s_loader:
-            bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
-            bmg.to(device)
-
-            # Gradient descent
+        # Gradient descent
+        for i in range(steps):
             pred=argforward(temp_weights, bmg).to(device)
             targets = targets.reshape(-1,1).to(device)
 
@@ -49,12 +48,20 @@ def inner_loop(model, inner_lr, task, steps, m_support, k_query, test_indices= N
     if test_indices is None:
         return metaloss
     else:
-        return metaloss, pred, targets
+        test_loss = 0
+        for batch in test_loader:
+            bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
+            bmg.to(device)
+            pred=argforward(temp_weights, bmg).to(device)
+
+            targets = targets.reshape(-1,1).to(device)
+            test_loss += criterion(pred, targets).to(device)
+        return metaloss, test_loss, pred, targets
 
 def outer_loop(model, inner_lr, tasks, m_support, k_query):
     total_loss = 0
     for task in tasks:
-        metaloss = inner_loop(model,inner_lr, task, grad_steps=1 ,m_support=m_support, k_query=k_query)
+        metaloss = inner_loop(model,inner_lr, task, steps=1 ,m_support=m_support, k_query=k_query)
         total_loss+= metaloss
     
     return total_loss / len(tasks)
@@ -81,23 +88,30 @@ def train(model, num_epochs, optimizer, num_train, train_tasks, inner_lr, m_supp
         if epoch == 0 or (epoch+1) % 100 == 0:
             print("{0} Train Loss: {1:.3f}".format(epoch, metaloss.cpu().detach().numpy()))
 
-def eval(model, fine_lr, fine_tune_steps, test_tasks, m_support):
+def eval(model, optimizer, fine_lr, fine_tune_steps, test_tasks, m_support, k_query):
     final_preds = []
     final_targets = []
-    k_query = 50 - m_support
     test_indices = random.sample(range(50), 10)
     for task in test_tasks:
         pred_out = []
         target_out = []
 
-        test_loss, pred, target = inner_loop(model, fine_lr, task, fine_tune_steps, m_support, k_query, test_indices)
+        for i in range(20):
+            metaloss, test_loss, pred, target = inner_loop(model, fine_lr, task, fine_tune_steps, m_support, k_query, test_indices)
+            metagrads=torch.autograd.grad(metaloss,model.parameters())
+
+            #important step
+            for w,g in zip(model.parameters(),metagrads):
+                w.grad=g
+            optimizer.step()
+            print("Task:", task, "Test epoch:", i, "Test Loss:", test_loss)
 
         pred,target = pred.cpu().detach().numpy(), target.cpu().detach().numpy()
         pred_out.extend(pred)
         target_out.extend(target)
 
         
-        print("Task:{0} MAE:{1:.3f}, R^2:{1:.3f}".format(task, np.average(abs(np.array(pred_out) - np.array(target_out))), round(scipy.stats.spearmanr(pred, target)[0],3)))
+        print("Task:{0} MAE:{1:.3f}, R^2:{2:.3f}".format(task, np.average(abs(np.array(pred_out) - np.array(target_out))), round(scipy.stats.spearmanr(pred, target)[0],3)))
 
         for i in range(len(pred_out)):
             pred_out[i] = pred_out[i][0]
@@ -124,9 +138,9 @@ def eval(model, fine_lr, fine_tune_steps, test_tasks, m_support):
 # Define the loss function and optimizer
 meta_lr = 0.0001
 inner_lr = 0.0001
-fine_lr = 0.0001
-fine_tune_steps = 20
-epochs = 5000
+fine_lr = 1E-7
+fine_tune_steps = 3
+epochs = 100
 m_support = 5
 k_query = 25
 num_train_sample = 3
@@ -156,7 +170,7 @@ for combo in combos:
 
 
     train(mpnn, epochs, optimizer, num_train_sample,train_tasks, inner_lr,m_support,k_query)
-    eval(mpnn, fine_lr, fine_tune_steps, train_tasks, m_support)
+    eval(mpnn, optimizer, fine_lr, fine_tune_steps, combo, m_support=30, k_query=10)
 
 
 directory = 'results'
