@@ -26,7 +26,7 @@ def generate_data(csv, task, m_support, k_query, test_indices):
 
 
     #choose m support and k query at random, no overlap
-    indices=list(range(50))
+    indices=list(range(len(task_data)))
     random.shuffle(indices)
 
     if not test_indices:

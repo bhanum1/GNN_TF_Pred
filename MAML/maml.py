@@ -13,7 +13,7 @@ import scipy
 from model import *
 from data import generate_data
 
-datafile = "maml_final.csv"
+datafile = "data/train_data.csv"
 
 def inner_loop(model, inner_lr, task, steps, m_support, k_query, test_indices= None):
     temp_weights = clone_weights(model) #clone weights
@@ -165,25 +165,23 @@ criterion = torch.nn.MSELoss(reduction='mean')
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Train all combinations
-comb = list(combinations(range(15),3))
-combos = random.sample(comb, 10)
+comb = list(combinations(range(9),2))
+combos = random.sample(comb, 1)
 
 
 
 for combo in combos:
     #initialize the model
-    combo = [0,3,7]
     mpnn = build_model()
     mpnn.to(device)
     optimizer = optim.Adam(mpnn.parameters(), lr = meta_lr)
     
     #create list of train tasks
     train_tasks = []
-    for i in range(15):
+    for i in range(9):
         if i not in combo:
             train_tasks.append(i)
 
-    eval(mpnn, optimizer, fine_lr, fine_tune_steps, combo, m_support=m_support, k_query=k_query, fine_tune_epochs=fine_tune_epochs)
     train(mpnn, epochs, optimizer, num_train_sample,train_tasks, inner_lr,m_support,k_query)
     eval(mpnn, optimizer, fine_lr, fine_tune_steps, combo, m_support=m_support, k_query=k_query, fine_tune_epochs=fine_tune_epochs)
 
