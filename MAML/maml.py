@@ -91,8 +91,10 @@ def train(model, num_epochs, optimizer, num_train, train_tasks, inner_lr, m_supp
 def eval(model, optimizer, fine_lr, fine_tune_steps, test_tasks, m_support, k_query):
     final_preds = []
     final_targets = []
-    test_indices = random.sample(range(50), 10)
+
+    k_query = 25
     for task in test_tasks:
+        test_indices = random.sample(range(50), 10)
         pred_out = []
         target_out = []
 
@@ -139,8 +141,8 @@ def eval(model, optimizer, fine_lr, fine_tune_steps, test_tasks, m_support, k_qu
 meta_lr = 0.0001
 inner_lr = 0.0001
 fine_lr = 1E-7
-fine_tune_steps = 3
-epochs = 100
+fine_tune_steps = 1
+epochs = 5000
 m_support = 5
 k_query = 25
 num_train_sample = 3
