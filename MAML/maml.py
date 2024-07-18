@@ -11,20 +11,20 @@ from itertools import combinations
 import os
 import scipy
 from model import *
-from data import generate_data
+from data import generate_data, get_loaders
 
 datafile = "data/train_data.csv"
 
-def inner_loop(model, inner_lr, task, steps, m_support, k_query, test_indices= None):
+def inner_loop(model, inner_lr, task_data, task, steps, m_support, k_query, test_indices= None):
     temp_weights = clone_weights(model) #clone weights
 
     #get loaders with appropriate number of datapoints
-    s_loader, q_loader, test_loader = generate_data(datafile,task, m_support, k_query, test_indices)
+    s_loader, q_loader, test_loader = get_loaders(task_data[task], m_support, k_query, test_indices)
     # train on support data
     for batch in s_loader:
         bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
         bmg.to(device)
-
+        
         # Gradient descent
         for i in range(steps):
             pred=argforward(temp_weights, bmg).to(device)
@@ -49,6 +49,7 @@ def inner_loop(model, inner_lr, task, steps, m_support, k_query, test_indices= N
         return metaloss
     else:
         test_loss = 0
+        
         for batch in test_loader:
             bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
             bmg.to(device)
@@ -57,26 +58,26 @@ def inner_loop(model, inner_lr, task, steps, m_support, k_query, test_indices= N
 
             targets = targets.reshape(-1,1).to(device)
             test_loss += criterion(pred, targets).to(device)
-        return metaloss, test_loss, pred, targets
 
-def outer_loop(model, inner_lr, tasks, m_support, k_query):
+        return test_loss, pred, targets
+
+def outer_loop(model, inner_lr, task_data, tasks, m_support, k_query):
     total_loss = 0
     for task in tasks:
-        metaloss = inner_loop(model,inner_lr, task, steps=1 ,m_support=m_support, k_query=k_query)
+        metaloss = inner_loop(model,inner_lr, task_data, task, steps=1 ,m_support=m_support, k_query=k_query)
         total_loss+= metaloss
     
     return total_loss / len(tasks)
 
-def train(model, num_epochs, optimizer, num_train, train_tasks, inner_lr, m_support, k_query):
+def train(model, num_epochs, optimizer, num_train, task_data, train_tasks, inner_lr, m_support, k_query):
     #training loop
     for epoch in range(num_epochs):
         optimizer.zero_grad()
-
         #sample collection of tasks to train on
         task_sample = random.sample(train_tasks, num_train)
 
         #run loops and get metaloss
-        metaloss = outer_loop(model, inner_lr, task_sample, m_support, k_query)
+        metaloss = outer_loop(model, inner_lr, task_data, task_sample, m_support, k_query)
 
         #backpropagate
         metagrads=torch.autograd.grad(metaloss,model.parameters())
@@ -89,29 +90,23 @@ def train(model, num_epochs, optimizer, num_train, train_tasks, inner_lr, m_supp
         if epoch == 0 or (epoch+1) % 100 == 0:
             print("{0} Train Loss: {1:.3f}".format(epoch, metaloss.cpu().detach().numpy()))
 
-def eval(model, optimizer, fine_lr, fine_tune_steps, test_tasks, m_support, k_query, fine_tune_epochs):
+def eval(model, task_data, optimizer, fine_lr, fine_tune_steps, test_tasks, m_support, k_query):
     final_preds = []
     final_targets = []
 
     for task in test_tasks:
-        metaloss_curve = []
-        testloss_curve = []
 
-        test_indices = random.sample(range(50), 20)
+        test_indices = random.sample(range(len(task_data[task])), 50)
         pred_out = []
         target_out = []
 
-        for i in range(fine_tune_epochs):
-            metaloss, test_loss, pred, target = inner_loop(model, fine_lr, task, fine_tune_steps, m_support, k_query, test_indices)
-            metagrads=torch.autograd.grad(metaloss,model.parameters())
+        metaloss, pred, target = inner_loop(model, fine_lr, task_data, task, fine_tune_steps, m_support, k_query, test_indices)
+        metagrads=torch.autograd.grad(metaloss,model.parameters())
 
-            metaloss_curve.append(metaloss.cpu().detach().numpy())
-            testloss_curve.append(test_loss.cpu().detach().numpy())
-
-            #important step
-            for w,g in zip(model.parameters(),metagrads):
-                w.grad=g
-            optimizer.step()
+        #important step
+        for w,g in zip(model.parameters(),metagrads):
+            w.grad=g
+        optimizer.step()
             #print("Task:", task, "Test epoch:", i, "Meta Loss:", metaloss_curve[i], "Test Loss:", testloss_curve[i])
         
 
@@ -130,9 +125,7 @@ def eval(model, optimizer, fine_lr, fine_tune_steps, test_tasks, m_support, k_qu
         final_preds.append(pred_out)
         final_targets.append(target_out)
 
-        
-        df = pd.DataFrame(np.transpose(np.array([ metaloss_curve, testloss_curve])), columns=['Train_loss', 'Test_loss'])
-        df.to_csv('results/' + str(task) + 'training_curve.csv')
+
 
     out_dict = dict()
     for task in range(len(test_tasks)):
@@ -144,17 +137,17 @@ def eval(model, optimizer, fine_lr, fine_tune_steps, test_tasks, m_support, k_qu
 
     df = pd.DataFrame(out_dict)
 
-    filename = 'results/' + str(test_tasks[0]) + "_" + str(test_tasks[1]) + "_" + str(test_tasks[2]) + '.csv'
+    filename = 'results/' + str(test_tasks[0]) + "_" + str(test_tasks[1]) + '.csv'
+    #filename = 'results/' + str(test_tasks[0]) + "_" + str(test_tasks[1]) + "_" + str(test_tasks[2]) + '.csv'
     df.to_csv(filename)
 
 
 # Define the loss function and optimizer
 meta_lr = 0.0001
 inner_lr = 0.0001
-fine_lr = 1E-7
-fine_tune_steps = 1
-epochs = 10000
-fine_tune_epochs = 5000
+fine_lr = 1E-5
+fine_tune_steps = 10
+epochs = 1000
 m_support = 5
 k_query = 25
 num_train_sample = 3
@@ -169,7 +162,6 @@ comb = list(combinations(range(9),2))
 combos = random.sample(comb, 1)
 
 
-
 for combo in combos:
     #initialize the model
     mpnn = build_model()
@@ -182,10 +174,14 @@ for combo in combos:
         if i not in combo:
             train_tasks.append(i)
 
-    train(mpnn, epochs, optimizer, num_train_sample,train_tasks, inner_lr,m_support,k_query)
-    eval(mpnn, optimizer, fine_lr, fine_tune_steps, combo, m_support=m_support, k_query=k_query, fine_tune_epochs=fine_tune_epochs)
+    task_data = generate_data(datafile,train_tasks)
+    test_data = generate_data(datafile, combo)
+
+    train(mpnn, epochs, optimizer, num_train_sample,task_data, train_tasks, inner_lr,m_support,k_query)
+    eval(mpnn, test_data, optimizer, fine_lr, fine_tune_steps, combo, m_support=5, k_query=5)
 
 
+'''
 directory = 'results'
 
 
@@ -199,7 +195,7 @@ for file in os.scandir(directory):
 
         label1 = nums[0] + "_" + nums
         label2 = nums[1] + "_" + nums
-        label3 = nums[2] + "_" + nums
+        #label3 = nums[2] + "_" + nums
 
         #rcc1 = scipy.stats.spearmanr(df['true_' + nums[0]], df['pred_' + nums[0]])
         #srcc2 = scipy.stats.spearmanr(df['true_' + nums[1]], df['pred_' + nums[1]])
@@ -220,4 +216,4 @@ df = pd.DataFrame.from_dict(result_dict, orient='index', columns = ['MAE'])
 
 filename = 'test.csv'
 df.to_csv(filename)
-
+'''

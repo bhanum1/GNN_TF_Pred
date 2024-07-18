@@ -2,10 +2,10 @@ import pandas as pd
 from chemprop import data, featurizers, models, nn
 import random
 
-def generate_data(csv, task, m_support, k_query, test_indices):
+def generate_data(csv, tasks):
     input_path = csv # path to your data .csv file
     df = pd.read_csv(input_path) #convert to dataframe
-    num_workers = 0 # number of workers for dataloader. 0 means using main process for data loading
+    
 
     #get columns
     smis = df['smiles']
@@ -13,18 +13,24 @@ def generate_data(csv, task, m_support, k_query, test_indices):
     task_labels = df['task']
 
     #create holders for all dataloaders
+    task_data_dict = dict()
+    for task in tasks:
+        #Find correct section of data
+        indices = task_labels == task
+        task_smis = smis.loc[indices]
+        task_targets = targets.loc[indices]
+
+        #create data
+        task_data = [data.MoleculeDatapoint.from_smi(smi, y) for smi, y in zip(task_smis, task_targets)]
+        task_data_dict[task] = task_data
+
+
+    return task_data_dict
+
+def get_loaders(task_data, m_support, k_query, test_indices):
+    num_workers = 10 # number of workers for dataloader. 0 means using main process for data loading
     featurizer = featurizers.SimpleMoleculeMolGraphFeaturizer()
-
-    #Find correct section of data
-    indices = task_labels == task
-    task_smis = smis.loc[indices]
-    task_targets = targets.loc[indices]
-
-    #create data
-    task_data = [data.MoleculeDatapoint.from_smi(smi, y) for smi, y in zip(task_smis, task_targets)]
-    mols = [d.mol for d in task_data]
-
-
+    
     #choose m support and k query at random, no overlap
     indices=list(range(len(task_data)))
     random.shuffle(indices)
