@@ -94,7 +94,10 @@ def eval(model, optimizer, fine_lr, fine_tune_steps, test_tasks, m_support, k_qu
     final_targets = []
 
     for task in test_tasks:
-        test_indices = random.sample(range(50), 10)
+        metaloss_curve = []
+        testloss_curve = []
+
+        test_indices = random.sample(range(50), 20)
         pred_out = []
         target_out = []
 
@@ -102,11 +105,15 @@ def eval(model, optimizer, fine_lr, fine_tune_steps, test_tasks, m_support, k_qu
             metaloss, test_loss, pred, target = inner_loop(model, fine_lr, task, fine_tune_steps, m_support, k_query, test_indices)
             metagrads=torch.autograd.grad(metaloss,model.parameters())
 
+            metaloss_curve.append(metaloss.cpu().detach().numpy())
+            testloss_curve.append(test_loss.cpu().detach().numpy())
+
             #important step
             for w,g in zip(model.parameters(),metagrads):
                 w.grad=g
             optimizer.step()
-            print("Task:", task, "Test epoch:", i, "Test Loss:", test_loss)
+            print("Task:", task, "Test epoch:", i, "Meta Loss:", metaloss_curve[i], "Test Loss:", testloss_curve[i])
+        
 
         pred,target = pred.cpu().detach().numpy(), target.cpu().detach().numpy()
         pred_out.extend(pred)
@@ -122,6 +129,9 @@ def eval(model, optimizer, fine_lr, fine_tune_steps, test_tasks, m_support, k_qu
 
         final_preds.append(pred_out)
         final_targets.append(target_out)
+
+        df = pd.DataFrame(np.array(range(fine_tune_epochs)), np.array(metaloss_curve), np.array(testloss_curve), columns=['epochs','train_loss','test_loss'])
+        df.to_csv('results/' + str(task) + 'training_curve.csv')
 
     out_dict = dict()
     for task in range(len(test_tasks)):
@@ -142,8 +152,8 @@ meta_lr = 0.0001
 inner_lr = 0.0001
 fine_lr = 1E-7
 fine_tune_steps = 1
-epochs = 5000
-fine_tune_epochs = 20
+epochs = 10000
+fine_tune_epochs = 5000
 m_support = 5
 k_query = 25
 num_train_sample = 3
@@ -173,7 +183,7 @@ for combo in combos:
 
 
     train(mpnn, epochs, optimizer, num_train_sample,train_tasks, inner_lr,m_support,k_query)
-    eval(mpnn, optimizer, fine_lr, fine_tune_steps, combo, m_support=m_support, k_query=k_query, fine_tune_epochs=fine_tune_epochs)
+    eval(mpnn, optimizer, fine_lr, fine_tune_steps, combo, m_support=10, k_query=10, fine_tune_epochs=fine_tune_epochs)
 
 
 directory = 'results'
