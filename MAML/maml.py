@@ -57,6 +57,10 @@ def inner_loop(model, inner_lr, task_data, task, steps, m_support, k_query, test
             targets = targets.reshape(-1,1).to(device)
             metaloss += criterion(pred, targets).to(device)
 
+        SRCC = round(scipy.stats.spearmanr(pred.cpu().detach().numpy(), targets.cpu().detach().numpy())[0],3)
+        if SRCC > 0.5:
+            print(SRCC)
+
         return metaloss
     else:
         for batch in test_loader:
