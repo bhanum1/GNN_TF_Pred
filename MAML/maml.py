@@ -1,5 +1,7 @@
 #import packages (can do pip install chemprop)
 import pandas as pd
+import sklearn.decomposition
+import sklearn.preprocessing
 import numpy as np
 from pathlib import Path
 from chemprop import data, featurizers, models, nn
@@ -12,11 +14,15 @@ import os
 import scipy
 from model import *
 from data import generate_data, get_loaders
+import sklearn
 
 datafile = "data/train_data.csv"
+pca = sklearn.decomposition.PCA(n_components=2)
+
 
 def inner_loop(model, inner_lr, task_data, task, steps, m_support, k_query, test_indices= None):
     temp_weights = clone_weights(model) #clone weights
+    pca_rep = []
 
     #get loaders with appropriate number of datapoints
     s_loader, q_loader, test_loader = get_loaders(task_data[task], m_support, k_query, test_indices)
@@ -35,6 +41,12 @@ def inner_loop(model, inner_lr, task_data, task, steps, m_support, k_query, test
             grads=torch.autograd.grad(loss,temp_weights)
             temp_weights=[w-inner_lr*g for w,g in zip(temp_weights,grads)] #temporary update of weights
 
+            params = represent(temp_weights)
+            if len(pca_rep) != 0:
+                pca_rep = np.concatenate((pca_rep, params), axis=0)
+            else:
+                pca_rep = params
+            
             if test_indices is not None:
                 print("supp MAE:", np.average(abs(pred.cpu().detach().numpy() - targets.cpu().detach().numpy())))
 
@@ -61,7 +73,7 @@ def inner_loop(model, inner_lr, task_data, task, steps, m_support, k_query, test
 
             targets = targets.reshape(-1,1).to(device)
 
-        return pred, targets
+        return pred, targets, pca_rep
 
 def outer_loop(model, inner_lr, task_data, tasks, m_support, k_query):
     total_loss = 0
@@ -71,9 +83,22 @@ def outer_loop(model, inner_lr, task_data, tasks, m_support, k_query):
     
     return total_loss / len(tasks)
 
+
+def represent(params):
+    param_list = []
+
+    for i in range(len(params)):
+        param_list.extend(params[i].reshape(-1,1).cpu().detach().numpy())
+
+    params = np.array(param_list)
+
+    return np.transpose(params)
+
 def train(model, num_epochs, optimizer, num_train, task_data, train_tasks, inner_lr, m_support, k_query):
     #training loop
     train_curve = []
+    pca_rep = []
+
     for epoch in range(num_epochs):
         optimizer.zero_grad()
         #sample collection of tasks to train on
@@ -90,25 +115,45 @@ def train(model, num_epochs, optimizer, num_train, task_data, train_tasks, inner
         
         optimizer.step()
 
+        params = clone_weights(model)
+        params = represent(params)
+        
+        if len(pca_rep) != 0:
+            pca_rep = np.concatenate((pca_rep, params), axis=0)
+        else:
+            pca_rep = params
+
+
+
         if epoch == 0 or (epoch+1) % 100 == 0:
             print("{0} Train Loss: {1:.3f}".format(epoch, metaloss.cpu().detach().numpy()))
-
+            
+            if len(pca_rep) > 2:
+                pca_df = pca_rep
+                pca_df = pd.DataFrame(pca.fit_transform(pca_df))
+                pca_df.to_csv('pca.csv')
+            
         train_curve.append(metaloss.cpu().detach().numpy())
 
     curve = pd.DataFrame(np.transpose(np.array(train_curve)))
     curve.to_csv('training_curve.csv')
 
-def eval(model, task_data, optimizer, fine_lr, fine_tune_steps, test_tasks, m_support, k_query):
+    return curve, pca_rep
+
+
+
+
+def eval(model, task_data, fine_lr, fine_tune_steps, test_tasks, m_support, k_query):
     final_preds = []
     final_targets = []
-
+    pca_reps = []
     for task in test_tasks:
 
         test_indices = random.sample(range(len(task_data[task])), 50)
         pred_out = []
         target_out = []
 
-        pred, target = inner_loop(model, fine_lr, task_data, task, fine_tune_steps, m_support, k_query, test_indices)
+        pred, target, pca_rep = inner_loop(model, fine_lr, task_data, task, fine_tune_steps, m_support, k_query, test_indices)
         
 
         pred,target = pred.cpu().detach().numpy(), target.cpu().detach().numpy()
@@ -126,6 +171,7 @@ def eval(model, task_data, optimizer, fine_lr, fine_tune_steps, test_tasks, m_su
         final_preds.append(pred_out)
         final_targets.append(target_out)
 
+        pca_reps.extend(pca_rep)
 
 
     out_dict = dict()
@@ -141,14 +187,15 @@ def eval(model, task_data, optimizer, fine_lr, fine_tune_steps, test_tasks, m_su
     filename = 'results/' + str(test_tasks[0]) + "_" + str(test_tasks[1]) + '.csv'
     #filename = 'results/' + str(test_tasks[0]) + "_" + str(test_tasks[1]) + "_" + str(test_tasks[2]) + '.csv'
     df.to_csv(filename)
-
+    
+    return pca_reps
 
 # Define the loss function and optimizer
 meta_lr = 0.001
 inner_lr = 0.00001
-fine_lr = 0.1
+fine_lr = 0.05
 fine_tune_steps = 10
-epochs = 10000
+epochs = 500
 m_support = 5
 k_query = 25
 num_train_sample = 3
@@ -178,9 +225,13 @@ for combo in combos:
     task_data = generate_data(datafile,train_tasks)
     test_data = generate_data(datafile, combo)
 
-    eval(mpnn, test_data, optimizer, fine_lr, fine_tune_steps, combo, m_support=10, k_query=1)
-    train(mpnn, epochs, optimizer, num_train_sample,task_data, train_tasks, inner_lr,m_support,k_query)
-    eval(mpnn, test_data, optimizer, fine_lr, fine_tune_steps, combo, m_support=10, k_query=1)
+    #eval(mpnn, test_data, fine_lr, fine_tune_steps, combo, m_support=10, k_query=1)
+    _, train_pca = train(mpnn, epochs, optimizer, num_train_sample,task_data, train_tasks, inner_lr,m_support,k_query)
+    test_pca = eval(mpnn, test_data, fine_lr, fine_tune_steps, combo, m_support=10, k_query=1)
+
+    pca_rep = np.concatenate((train_pca, test_pca), axis=0)
+    pca_df = pd.DataFrame(pca.fit_transform(pca_rep))
+    pca_df.to_csv('pca.csv')
 
 
 '''
