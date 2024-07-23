@@ -17,7 +17,7 @@ from data import generate_data, get_loaders
 
 
 datafile = "data/train_data.csv"
-
+test_datafile = 'data/test_data.csv'
 
 
 def inner_loop(model, inner_lr, task_data, task, steps, m_support, k_query, test_indices= None):
@@ -52,16 +52,17 @@ def inner_loop(model, inner_lr, task_data, task, steps, m_support, k_query, test
         for batch in q_loader:
             bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
             bmg.to(device)
+
             pred=argforward(temp_weights, bmg).to(device)
 
             targets = targets.reshape(-1,1).to(device)
             metaloss += criterion(pred, targets).to(device)
 
-        SRCC = round(scipy.stats.spearmanr(pred.cpu().detach().numpy(), targets.cpu().detach().numpy())[0],3)
-        if SRCC > 0.5:
-            print(SRCC)
 
-        return metaloss
+        # validation loss
+        task_val = val(temp_weights, val_data, fine_lr, task)
+
+        return metaloss, task_val
     else:
         for batch in test_loader:
             bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
@@ -75,24 +76,30 @@ def inner_loop(model, inner_lr, task_data, task, steps, m_support, k_query, test
 
 def outer_loop(model, inner_lr, task_data, tasks, m_support, k_query):
     total_loss = 0
+    total_val_loss = 0
     for task in tasks:
-        metaloss = inner_loop(model,inner_lr, task_data, task, steps=1 ,m_support=m_support, k_query=k_query)
+        metaloss, task_val = inner_loop(model,inner_lr, task_data, task, steps=1 ,m_support=m_support, k_query=k_query)
         total_loss+= metaloss
+        total_val_loss += task_val
     
-    return total_loss / len(tasks)
+    return total_loss / len(tasks), total_val_loss / len(tasks)
 
 
 def train(model, num_epochs, optimizer, num_train, task_data, train_tasks, inner_lr, m_support, k_query):
     #training loop
     train_curve = []
+    val_curve = []
 
+    lr_max = inner_lr
     for epoch in range(num_epochs):
+        inner_lr = lr_max * pow(2,-epoch/2000)
+
         optimizer.zero_grad()
         #sample collection of tasks to train on
         task_sample = random.sample(train_tasks, num_train)
 
         #run loops and get metaloss
-        metaloss = outer_loop(model, inner_lr, task_data, task_sample, m_support, k_query)
+        metaloss, val_loss = outer_loop(model, inner_lr, task_data, task_sample, m_support, k_query)
 
         #backpropagate
         metagrads=torch.autograd.grad(metaloss,model.parameters())
@@ -101,18 +108,34 @@ def train(model, num_epochs, optimizer, num_train, task_data, train_tasks, inner
             w.grad=g
         
         optimizer.step()
-
+        scheduler1.step()
 
 
         if epoch == 0 or (epoch+1) % 100 == 0:
-            print("{0} Train Loss: {1:.3f}".format(epoch, metaloss.cpu().detach().numpy()))
+            print("{0} Train Loss: {1:.3f} Val Loss: {2:.3f}".format(epoch, metaloss.cpu().detach().numpy(), val_loss.cpu().detach().numpy()))
 
             
         train_curve.append(metaloss.cpu().detach().numpy())
+        val_curve.append(val_loss.cpu().detach().numpy())
 
-    curve = pd.DataFrame(np.transpose(np.array(train_curve)))
+    dict = {"Train_loss":train_curve, "Val_loss":val_curve}
+    curve = pd.DataFrame(dict)
     curve.to_csv('training_curve.csv')
 
+
+
+def val(model_weights, task_data, fine_lr, task):
+    s_loader, _, _ = get_loaders(task_data[task], 50, 1, None)
+
+    for batch in s_loader:
+        bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
+        bmg.to(device)
+        pred=argforward(model_weights, bmg).to(device)
+        targets = targets.reshape(-1,1).to(device)
+
+        loss = criterion(pred, targets).to(device) #MSE
+    
+    return loss
 
 
 
@@ -161,13 +184,13 @@ def eval(model, task_data, fine_lr, fine_tune_steps, test_tasks, m_support, k_qu
     
 
 # Define the loss function and optimizer
-meta_lr = 0.0001
+meta_lr = 0.01
 inner_lr = 0.001
-fine_lr = 0.05
-fine_tune_steps = 10
-epochs = 500
-m_support = 5
-k_query = 25
+fine_lr = 0.005
+fine_tune_steps = 100
+epochs = 10000
+m_support = 10
+k_query = 10
 num_train_sample = 3
 
 criterion = torch.nn.MSELoss(reduction='mean')
@@ -185,6 +208,7 @@ for combo in combos:
     mpnn = build_model()
     mpnn.to(device)
     optimizer = optim.Adam(mpnn.parameters(), lr = meta_lr)
+    scheduler1 = torch.optim.lr_scheduler.StepLR(optimizer,2000,0.5)
     
     #create list of train tasks
     train_tasks = []
@@ -192,8 +216,8 @@ for combo in combos:
         if i not in combo:
             train_tasks.append(i)
 
-    task_data = generate_data(datafile,train_tasks)
-    test_data = generate_data(datafile, combo)
+    task_data, val_data = generate_data(datafile,train_tasks)
+    test_data, _ = generate_data(datafile, combo, test=True)
 
     #eval(mpnn, test_data, fine_lr, fine_tune_steps, combo, m_support=10, k_query=1)
     train(mpnn, epochs, optimizer, num_train_sample,task_data, train_tasks, inner_lr,m_support,k_query)

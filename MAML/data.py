@@ -2,7 +2,7 @@ import pandas as pd
 from chemprop import data, featurizers, models, nn
 import random
 
-def generate_data(csv, tasks):
+def generate_data(csv, tasks, test=False):
     input_path = csv # path to your data .csv file
     df = pd.read_csv(input_path) #convert to dataframe
     
@@ -14,6 +14,7 @@ def generate_data(csv, tasks):
 
     #create holders for all dataloaders
     task_data_dict = dict()
+    val_data_dict  = dict()
     for task in tasks:
         #Find correct section of data
         indices = task_labels == task
@@ -22,13 +23,31 @@ def generate_data(csv, tasks):
 
         #create data
         task_data = [data.MoleculeDatapoint.from_smi(smi, y) for smi, y in zip(task_smis, task_targets)]
-        task_data_dict[task] = task_data
+        
+
+        #split into train/val
+        if not test:
+            indices = list(range(len(task_smis)))
+            random.shuffle(indices)
+            
+            num = round(len(indices) * 0.8)
+            train_indices = indices[:num]
+            val_indices = indices[num:]
+
+            
+        else:
+            train_indices = list(range(len(task_smis)))
+            val_indices = None
+
+        train_data, val_data, _ = data.split_data_by_indices(task_data, train_indices, val_indices,None)
+        task_data_dict[task] = train_data
+        val_data_dict[task] = val_data
 
 
-    return task_data_dict
+    return task_data_dict, val_data_dict
 
 def get_loaders(task_data, m_support, k_query, test_indices):
-    num_workers = 10 # number of workers for dataloader. 0 means using main process for data loading
+    num_workers = 0 # number of workers for dataloader. 0 means using main process for data loading
     featurizer = featurizers.SimpleMoleculeMolGraphFeaturizer()
     
     #choose m support and k query at random, no overlap
