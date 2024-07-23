@@ -17,7 +17,6 @@ class SinusoidModel(nn.Module):
 
 # Output without using model
 def argforward(weights, x):
-
     output = F.linear(x,weights[0],weights[1])
     output = F.relu(output)
     output = F.linear(output,weights[2],weights[3])

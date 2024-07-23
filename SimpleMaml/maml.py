@@ -9,13 +9,13 @@ import torch
 import torch.optim as optim
 import torch.nn.functional as F
 import random
-from itertools import combinations
 import os
 import scipy
 from model import *
-from data import generate_data, get_loaders
+from data import get_loaders
+import math
 
-def inner_loop(model, inner_lr, task, steps, m_support, k_query):
+def inner_loop(model, inner_lr, task, steps, m_support, k_query, test=False):
     temp_weights = clone_weights(model) #clone weights
 
     #get loaders with appropriate number of datapoints
@@ -23,7 +23,8 @@ def inner_loop(model, inner_lr, task, steps, m_support, k_query):
 
     # train on support data
     for batch in s_loader:
-        x, y = batch
+        x,y = batch
+        x = x.to(device)
         # Gradient descent
         for i in range(steps):
             pred=argforward(temp_weights, x).to(device)
@@ -37,21 +38,22 @@ def inner_loop(model, inner_lr, task, steps, m_support, k_query):
     #Calculate metaloss on query data
     metaloss = 0
     for batch in q_loader:
-        bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
-        bmg.to(device)
+        x,y = batch
+        x = x.to(device)
 
-        pred=argforward(temp_weights, bmg).to(device)
+        pred=argforward(temp_weights, x).to(device)
 
-        targets = targets.reshape(-1,1).to(device)
-        metaloss += criterion(pred, targets).to(device)
+        y = y.to(device)
+        metaloss += criterion(pred, y).to(device)
 
-
-    return metaloss
+    if test:
+        return x,pred,y
+    else:
+        return metaloss
 
 
 def outer_loop(model, inner_lr, tasks, m_support, k_query):
     total_loss = 0
-    total_val_loss = 0
     for task in tasks:
         metaloss = inner_loop(model,inner_lr, task, steps=1 ,m_support=m_support, k_query=k_query)
         total_loss+= metaloss
@@ -59,21 +61,24 @@ def outer_loop(model, inner_lr, tasks, m_support, k_query):
     return total_loss / len(tasks)
 
 
-def train(model, num_epochs, optimizer, num_train, task_data, train_tasks, inner_lr, m_support, k_query):
+def train(model, num_epochs, optimizer, num_train, train_tasks, inner_lr, m_support, k_query):
     #training loop
     train_curve = []
-    val_curve = []
-
-    lr_max = inner_lr
+    avg_loss = 0
+    max_lr = inner_lr
     for epoch in range(num_epochs):
-        inner_lr = lr_max * pow(2,-epoch/2000)
-
+        inner_lr = max_lr * pow(0.95,epoch/20000)
         optimizer.zero_grad()
         #sample collection of tasks to train on
-        task_sample = random.sample(train_tasks, num_train)
+        sample_amplitudes, sample_phases = random.sample(train_tasks[0], num_train), random.sample(train_tasks[1], num_train)
+
+        task_sample = []
+        for i in range(len(sample_amplitudes)):
+            pair = (sample_amplitudes[i], sample_phases[i])
+            task_sample.append(pair)
 
         #run loops and get metaloss
-        metaloss, val_loss = outer_loop(model, inner_lr, task_data, task_sample, m_support, k_query)
+        metaloss = outer_loop(model, inner_lr, task_sample, m_support, k_query)
 
         #backpropagate
         metagrads=torch.autograd.grad(metaloss,model.parameters())
@@ -82,120 +87,68 @@ def train(model, num_epochs, optimizer, num_train, task_data, train_tasks, inner
             w.grad=g
         
         optimizer.step()
-        scheduler1.step()
+        scheduler.step()
 
+        avg_loss += metaloss.cpu().detach().numpy()
 
-        if epoch == 0 or (epoch+1) % 100 == 0:
-            print("{0} Train Loss: {1:.3f} Val Loss: {2:.3f}".format(epoch, metaloss.cpu().detach().numpy(), val_loss.cpu().detach().numpy()))
-
+        if epoch == 0 or (epoch+1) % 1000 == 0:
+            print("{0} Avg Train Loss (last 100): {1:.3f}".format(epoch, avg_loss/1000))
+            train_curve.append(avg_loss/1000)
+            avg_loss = 0
             
-        train_curve.append(metaloss.cpu().detach().numpy())
-        val_curve.append(val_loss.cpu().detach().numpy())
+            
 
-    dict = {"Train_loss":train_curve, "Val_loss":val_curve}
+    dict = {"Train_loss":train_curve}
     curve = pd.DataFrame(dict)
     curve.to_csv('training_curve.csv')
 
 
+def eval(model, fine_lr, fine_tune_steps, test_task, m_support, k_query):
 
-def val(model_weights, task_data, fine_lr, task):
-    s_loader, _, _ = get_loaders(task_data[task], 50, 1, None)
+    pred_out = []
+    target_out = []
+    x, pred, target = inner_loop(model, fine_lr, test_task, fine_tune_steps, m_support, k_query, True)
+    loss = criterion(pred, target)
 
-    for batch in s_loader:
-        bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
-        bmg.to(device)
-        pred=argforward(model_weights, bmg).to(device)
-        targets = targets.reshape(-1,1).to(device)
+    x,pred,target = x.squeeze().cpu().detach().numpy(),pred.squeeze().cpu().detach().numpy(), target.squeeze().cpu().detach().numpy()
 
-        loss = criterion(pred, targets).to(device) #MSE
-    
-    return loss
+    print("Amplitude: {0:.3f} Phase: {1:.3f} MSE:{2:.3f}".format(test_task[0], test_task[1],loss))
 
-
-
-def eval(model, task_data, fine_lr, fine_tune_steps, test_tasks, m_support, k_query):
-    final_preds = []
-    final_targets = []
-    for task in test_tasks:
-
-        test_indices = random.sample(range(len(task_data[task])), 50)
-        pred_out = []
-        target_out = []
-
-        pred, target = inner_loop(model, fine_lr, task_data, task, fine_tune_steps, m_support, k_query, test_indices)
-        
-
-        pred,target = pred.cpu().detach().numpy(), target.cpu().detach().numpy()
-        pred_out.extend(pred)
-        target_out.extend(target)
-
-        
-        print("Task:{0} MAE:{1:.3f}, R^2:{2:.3f}".format(task, np.average(abs(np.array(pred_out) - np.array(target_out))), round(scipy.stats.spearmanr(pred, target)[0],3)))
-
-        for i in range(len(pred_out)):
-            pred_out[i] = pred_out[i][0]
-        for i in range(len(target_out)):
-            target_out[i] = target_out[i][0]
-
-        final_preds.append(pred_out)
-        final_targets.append(target_out)
-
-
-
-    out_dict = dict()
-    for task in range(len(test_tasks)):
-        pred_label = 'pred_' + str(test_tasks[task])
-        true_label = 'true_' + str(test_tasks[task])
-
-        out_dict[true_label] = final_targets[task]
-        out_dict[pred_label] = final_preds[task]
-
-    df = pd.DataFrame(out_dict)
-
-    filename = 'results/' + str(test_tasks[0]) + "_" + str(test_tasks[1]) + '.csv'
-    #filename = 'results/' + str(test_tasks[0]) + "_" + str(test_tasks[1]) + "_" + str(test_tasks[2]) + '.csv'
-    df.to_csv(filename)
+    dict = {"X":x, "True":target, "Pred":pred}
+    df = pd.DataFrame(dict)
+    df.to_csv('pred.csv')
     
 
 # Define the loss function and optimizer
 meta_lr = 0.01
-inner_lr = 0.001
-fine_lr = 0.005
-fine_tune_steps = 100
-epochs = 100000
+inner_lr = 0.01
+fine_lr = 0.01
+fine_tune_steps = 10
+epochs = 1000000
 m_support = 10
 k_query = 10
-num_train_sample = 3
+num_train_sample = 10
 
-criterion = torch.nn.MSELoss(reduction='mean')
+criterion = torch.nn.L1Loss(reduction='mean')
 
 # gpu stuff
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-# Train all combinations
-comb = list(combinations(range(9),2))
-combos = random.sample(comb, 1)
+#initialize the model
+ffn = SinusoidModel(1)
+ffn.to(device)
+optimizer = optim.Adam(ffn.parameters(), lr = meta_lr)
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer,10000,0.95)
 
+#create list of train tasks
+phases = list(np.linspace(0, math.pi, 100))
+amplitudes = list(np.linspace(0.1,5, 100))
 
-for combo in combos:
-    #initialize the model
-    mpnn = build_model()
-    mpnn.to(device)
-    optimizer = optim.Adam(mpnn.parameters(), lr = meta_lr)
-    scheduler1 = torch.optim.lr_scheduler.StepLR(optimizer,2000,0.5)
-    
-    #create list of train tasks
-    train_tasks = []
-    for i in range(9):
-        if i not in combo:
-            train_tasks.append(i)
+train_tasks = [amplitudes, phases]
 
-    task_data, val_data = generate_data(datafile,train_tasks)
-    test_data, _ = generate_data(datafile, combo, test=True)
-
-    #eval(mpnn, test_data, fine_lr, fine_tune_steps, combo, m_support=10, k_query=1)
-    train(mpnn, epochs, optimizer, num_train_sample,task_data, train_tasks, inner_lr,m_support,k_query)
-    eval(mpnn, test_data, fine_lr, fine_tune_steps, combo, m_support=10, k_query=1)
+#eval(mpnn, test_data, fine_lr, fine_tune_steps, combo, m_support=10, k_query=1)
+train(ffn, epochs, optimizer, num_train_sample, train_tasks, inner_lr,m_support,k_query)
+eval(ffn, fine_lr, fine_tune_steps,(1,0), m_support=10, k_query=100)
 
 
 '''
