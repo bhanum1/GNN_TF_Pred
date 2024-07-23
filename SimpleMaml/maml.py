@@ -15,74 +15,48 @@ import scipy
 from model import *
 from data import generate_data, get_loaders
 
-
-datafile = "data/train_data.csv"
-test_datafile = 'data/test_data.csv'
-
-
-def inner_loop(model, inner_lr, task_data, task, steps, m_support, k_query, test_indices= None):
+def inner_loop(model, inner_lr, task, steps, m_support, k_query):
     temp_weights = clone_weights(model) #clone weights
 
     #get loaders with appropriate number of datapoints
-    s_loader, q_loader, test_loader = get_loaders(task_data[task], m_support, k_query, test_indices)
+    s_loader, q_loader = get_loaders(task, m_support, k_query)
+
     # train on support data
     for batch in s_loader:
-        bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
-        bmg.to(device)
-        
+        x, y = batch
         # Gradient descent
         for i in range(steps):
-            pred=argforward(temp_weights, bmg).to(device)
-            targets = targets.reshape(-1,1).to(device)
+            pred=argforward(temp_weights, x).to(device)
+            y = y.to(device)
 
-            loss = criterion(pred, targets).to(device) #MSE
+            loss = criterion(pred, y).to(device) #MSE
 
             grads=torch.autograd.grad(loss,temp_weights)
             temp_weights=[w-inner_lr*g for w,g in zip(temp_weights,grads)] #temporary update of weights
 
-            
-            if test_indices is not None:
-                print("supp MAE:", np.average(abs(pred.cpu().detach().numpy() - targets.cpu().detach().numpy())))
+    #Calculate metaloss on query data
+    metaloss = 0
+    for batch in q_loader:
+        bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
+        bmg.to(device)
+
+        pred=argforward(temp_weights, bmg).to(device)
+
+        targets = targets.reshape(-1,1).to(device)
+        metaloss += criterion(pred, targets).to(device)
 
 
-
-    if test_indices is None:
-        #Calculate metaloss on query data
-        metaloss = 0
-        for batch in q_loader:
-            bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
-            bmg.to(device)
-
-            pred=argforward(temp_weights, bmg).to(device)
-
-            targets = targets.reshape(-1,1).to(device)
-            metaloss += criterion(pred, targets).to(device)
+    return metaloss
 
 
-        # validation loss
-        task_val = val(temp_weights, val_data, fine_lr, task)
-
-        return metaloss, task_val
-    else:
-        for batch in test_loader:
-            bmg, V_d, X_d, targets, weights, lt_mask, gt_mask = batch
-            bmg.to(device)
-
-            pred=argforward(temp_weights, bmg).to(device)
-
-            targets = targets.reshape(-1,1).to(device)
-
-        return pred, targets
-
-def outer_loop(model, inner_lr, task_data, tasks, m_support, k_query):
+def outer_loop(model, inner_lr, tasks, m_support, k_query):
     total_loss = 0
     total_val_loss = 0
     for task in tasks:
-        metaloss, task_val = inner_loop(model,inner_lr, task_data, task, steps=1 ,m_support=m_support, k_query=k_query)
+        metaloss = inner_loop(model,inner_lr, task, steps=1 ,m_support=m_support, k_query=k_query)
         total_loss+= metaloss
-        total_val_loss += task_val
     
-    return total_loss / len(tasks), total_val_loss / len(tasks)
+    return total_loss / len(tasks)
 
 
 def train(model, num_epochs, optimizer, num_train, task_data, train_tasks, inner_lr, m_support, k_query):
@@ -92,7 +66,7 @@ def train(model, num_epochs, optimizer, num_train, task_data, train_tasks, inner
 
     lr_max = inner_lr
     for epoch in range(num_epochs):
-        inner_lr = lr_max * pow(2,-epoch/10000)
+        inner_lr = lr_max * pow(2,-epoch/2000)
 
         optimizer.zero_grad()
         #sample collection of tasks to train on
@@ -208,7 +182,7 @@ for combo in combos:
     mpnn = build_model()
     mpnn.to(device)
     optimizer = optim.Adam(mpnn.parameters(), lr = meta_lr)
-    scheduler1 = torch.optim.lr_scheduler.StepLR(optimizer,10000,0.5)
+    scheduler1 = torch.optim.lr_scheduler.StepLR(optimizer,2000,0.5)
     
     #create list of train tasks
     train_tasks = []
