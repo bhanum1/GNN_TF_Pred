@@ -10,7 +10,7 @@ class SinusoidDataset(Dataset):
     def __init__(self, task, size):
         self.amplitude, self.phase = task
 
-        x = np.random.uniform(0, math.pi * 4, size)
+        x = np.random.uniform(-5, 5, size)
 
         y = []
         for point in x:
