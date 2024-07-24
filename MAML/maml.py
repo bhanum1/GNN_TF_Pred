@@ -18,7 +18,7 @@ from data import generate_data, get_loaders
 
 datafile = "data/train_data.csv"
 test_datafile = 'data/test_data.csv'
-
+checkpoint_path = 'checkpoints/best.ckpt'
 
 def inner_loop(model, inner_lr, task_data, task, steps, m_support, k_query, test_indices= None):
     temp_weights = clone_weights(model) #clone weights
@@ -42,7 +42,15 @@ def inner_loop(model, inner_lr, task_data, task, steps, m_support, k_query, test
 
             
             if test_indices is not None:
-                print("supp MAE:", np.average(abs(pred.cpu().detach().numpy() - targets.cpu().detach().numpy())))
+                for t_batch in test_loader:
+                    t_bmg, V_d, X_d, t_targets, weights, lt_mask, gt_mask = t_batch
+                    t_bmg.to(device)
+
+                    t_pred=argforward(temp_weights, t_bmg).to(device)
+
+                    t_targets = t_targets.reshape(-1,1).to(device)
+
+                print("supp MAE: {0:.3f} Test MAE: {1:.3f}".format(np.average(abs(pred.cpu().detach().numpy() - targets.cpu().detach().numpy())), np.average(abs(t_pred.cpu().detach().numpy() - t_targets.cpu().detach().numpy()))))
 
 
 
@@ -91,8 +99,9 @@ def train(model, num_epochs, optimizer, num_train, task_data, train_tasks, inner
     val_curve = []
 
     lr_max = inner_lr
+    total_loss, total_val_loss = 0,0
     for epoch in range(num_epochs):
-        inner_lr = lr_max * pow(2,-epoch/10000)
+        inner_lr = lr_max * pow(2,-epoch/1000)
 
         optimizer.zero_grad()
         #sample collection of tasks to train on
@@ -110,13 +119,15 @@ def train(model, num_epochs, optimizer, num_train, task_data, train_tasks, inner
         optimizer.step()
         scheduler1.step()
 
+        total_loss += metaloss.cpu().detach().numpy()
+        total_val_loss += val_loss.cpu().detach().numpy()
 
         if epoch == 0 or (epoch+1) % 100 == 0:
-            print("{0} Train Loss: {1:.3f} Val Loss: {2:.3f}".format(epoch, metaloss.cpu().detach().numpy(), val_loss.cpu().detach().numpy()))
+            print("{0} Train Loss: {1:.3f} Val Loss: {2:.3f}".format(epoch, total_loss / 100, total_val_loss / 100))
+            train_curve.append(total_loss/100)
+            val_curve.append(total_val_loss/100)
 
-            
-        train_curve.append(metaloss.cpu().detach().numpy())
-        val_curve.append(val_loss.cpu().detach().numpy())
+            total_loss, total_val_loss = 0,0
 
     dict = {"Train_loss":train_curve, "Val_loss":val_curve}
     curve = pd.DataFrame(dict)
@@ -186,9 +197,9 @@ def eval(model, task_data, fine_lr, fine_tune_steps, test_tasks, m_support, k_qu
 # Define the loss function and optimizer
 meta_lr = 0.01
 inner_lr = 0.001
-fine_lr = 0.005
+fine_lr = 0.01
 fine_tune_steps = 100
-epochs = 100000
+epochs = 10000
 m_support = 10
 k_query = 10
 num_train_sample = 3
@@ -206,9 +217,10 @@ combos = random.sample(comb, 1)
 for combo in combos:
     #initialize the model
     mpnn = build_model()
+    mpnn = models.MPNN.load_from_checkpoint(checkpoint_path)
     mpnn.to(device)
     optimizer = optim.Adam(mpnn.parameters(), lr = meta_lr)
-    scheduler1 = torch.optim.lr_scheduler.StepLR(optimizer,10000,0.5)
+    scheduler1 = torch.optim.lr_scheduler.StepLR(optimizer,1000,0.5)
     
     #create list of train tasks
     train_tasks = []
@@ -222,6 +234,8 @@ for combo in combos:
     #eval(mpnn, test_data, fine_lr, fine_tune_steps, combo, m_support=10, k_query=1)
     train(mpnn, epochs, optimizer, num_train_sample,task_data, train_tasks, inner_lr,m_support,k_query)
     eval(mpnn, test_data, fine_lr, fine_tune_steps, combo, m_support=10, k_query=1)
+
+    torch.save(mpnn.state_dict(), 'results/model.pt')
 
 
 '''

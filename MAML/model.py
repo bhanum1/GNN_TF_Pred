@@ -2,18 +2,18 @@ from chemprop import data, featurizers, models, nn
 import torch
 import torch.nn.functional as F
 
-def build_model():
+def build_model(dropout=0):
         
     #Create the network
-    mp = nn.BondMessagePassing(depth=3) # Make the gnn
+    mp = nn.BondMessagePassing(depth=3, dropout=dropout) # Make the gnn
     agg = nn.MeanAggregation() # Aggregation type. Can also do SumAgg. or NormAgg.
-    ffn = nn.RegressionFFN() # regression head
+    ffn = nn.RegressionFFN(dropout=dropout) # regression head
 
     # I haven't experimented with this at all, not sure if it will affect the SSL
     batch_norm = False
 
     #initialize the model
-    mpnn = models.MPNN(mp, agg, ffn, batch_norm, [nn.metrics.MSEMetric])
+    mpnn = models.MPNN(mp, agg, ffn, batch_norm, [nn.metrics.MSEMetric()])
 
     return mpnn
 
@@ -21,7 +21,6 @@ def build_model():
 def clone_weights(model):
     #GNN Weights
     weights=[w.clone() for w in model.parameters()]
-
     return weights
 
 def message(H, bmg):
