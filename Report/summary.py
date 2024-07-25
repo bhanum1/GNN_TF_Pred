@@ -7,23 +7,45 @@ true_df = pd.read_csv('Data/visc/visc_test_data.csv')
 
 truths = true_df['target']
 
-results_dir = 'results'
+datasets = ['visc']
+splits = ['0.1','0.2','0.3','0.4']
+#'0.5','0.6','0.7']
 
+results_dict = dict()
 
-for root, dirs, files in os.walk(results_dir):
-    for filename in dirs:
-        print(os.path.join(root, filename))
+PATH_0 = 'results/'
+for folder in datasets: #each dataset
+    PATH_1 = PATH_0 + folder + '/'
+    results_dict[folder] = dict()
+
+    for split in splits: #each train split
+        PATH_2 = PATH_1 + split
+        PATH_2 += '_preds/'
+        results_dict[folder][split] = {'SRCC':[], 'MAE':[]}
+
+        for i in range(10): #each model iteration
+            PATH_3 = PATH_2 + 'm' + str(i) + '.csv'
+
+            df = pd.read_csv(PATH_3)
+
+            lnA = df['lnA']
+            EaR = df['EaR']
+            temp = df['temperature']
+
+            preds = lnA + EaR * temp
+
+            MAE = round(np.average(abs(truths - preds)),5)
+            SRCC = round(scipy.stats.spearmanr(truths, preds)[0],5)
+
+            results_dict[folder][split]['MAE'].append(MAE)
+            results_dict[folder][split]['SRCC'].append(SRCC)
+
+print(results_dict)
+
 '''
-for j in range(10): #make this iterate through all models
-    df = pd.read_csv('results/visc/0.1_preds/m'+str(j) + '.csv')
+for folder in datasets:
+    working_dict = results_dict[folder]
 
-    lnA = df['lnA']
-    EaR = df['EaR']
-    temp = df['temperature']
+    for 
 
-    preds = lnA + EaR * temp
-
-    MAE = np.average(abs(truths - preds))
-    SRCC = scipy.stats.spearmanr(truths, preds)[0]
 '''
-    

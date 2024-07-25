@@ -1,6 +1,6 @@
 # PATH Variables
 config-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Config_Files/config.toml
-data-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Report/Data/visc/visc_0.4.csv
+data-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Report/Data/visc/visc_0.6.csv
 output-dir = /home/bhanu/Documents/Chemprop_Models/
 
 # Hyperparameters
