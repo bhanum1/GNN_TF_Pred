@@ -10,7 +10,7 @@ T_labels = true_df['T']
 
 
 datasets = ['visc']
-splits = ['0.1','0.2','0.3','0.4', '0.5', '0.6']
+splits = ['0.1','0.2','0.3','0.4', '0.5', '0.6','0.7']
 T_index = ['1', '2', '3', '4', '5']
 results_dict = dict()
 
@@ -25,44 +25,79 @@ for folder in datasets: #each dataset
         for split in splits: #each train split
             PATH_2 = PATH_1 + split
             PATH_2 += '_preds/'
-            results_dict[folder][T][split] = dict()
+            results_dict[folder][T][split] = {'SRCC':[], 'MAE':[]}
 
+            MAE_vals, SRCC_vals =[],[]
             for i in range(10): #each model iteration
                 model = 'm' + str(i)
                 PATH_3 = PATH_2 + model + '.csv'
                 df = pd.read_csv(PATH_3)
-                results_dict[folder][T][split][model] = {'MAE':[], 'SRCC':[]}
 
-                
-                lnA = df['lnA'][T_labels == T]
-                EaR = df['EaR'][T_labels == T]
-                temp = df['temperature'][T_labels == T]
+                lnA = df['lnA'][T_labels == int(T)]
+                EaR = df['EaR'][T_labels == int(T)]
+                temp = df['temperature'][T_labels == int(T)]
 
                 preds = lnA + EaR * temp
+                truths_T = truths[T_labels == int(T)]
 
-                MAE = round(np.average(abs(truths - preds)),5)
-                SRCC = round(scipy.stats.spearmanr(truths, preds)[0],5)
+                
+                results_dict[folder][T][split]['MAE'].append(round(np.average(abs(truths_T - preds)),5))
+                results_dict[folder][T][split]['SRCC'].append(round(scipy.stats.spearmanr(truths_T, preds)[0],5))
 
-                results_dict[folder][split][model]['MAE'].append(MAE)
-                results_dict[folder][split]['SRCC'].append(SRCC)
+SM1,SM2,SM3,SM4,SM5 = [],[],[],[],[]
+SS1,SS2,SS3,SS4,SS5 = [],[],[],[],[]
+MM1,MM2,MM3,MM4,MM5 = [],[],[],[],[]
+MS1,MS2,MS3,MS4,MS5 = [],[],[],[],[]
 
-
-print(results_dict)
-'''
 for folder in datasets:
-    MAE_mean, SRCC_mean, MAE_dev, SRCC_dev = [],[],[],[]
     for split in splits:
-        MAE_mean.append(np.average(results_dict[folder][split]['MAE']))
-        SRCC_mean.append(np.average(results_dict[folder][split]['SRCC']))
-        MAE_dev.append(np.std(results_dict[folder][split]['MAE']))
-        SRCC_dev.append(np.std(results_dict[folder][split]['SRCC']))
+        SM1.append(np.average(results_dict[folder]['1'][split]['SRCC']))
+        SM2.append(np.average(results_dict[folder]['2'][split]['SRCC']))
+        SM3.append(np.average(results_dict[folder]['3'][split]['SRCC']))
+        SM4.append(np.average(results_dict[folder]['4'][split]['SRCC']))
+        SM5.append(np.average(results_dict[folder]['5'][split]['SRCC']))
+        
+        SS1.append(np.std(results_dict[folder]['1'][split]['SRCC']))
+        SS2.append(np.std(results_dict[folder]['2'][split]['SRCC']))
+        SS3.append(np.std(results_dict[folder]['3'][split]['SRCC']))
+        SS4.append(np.std(results_dict[folder]['4'][split]['SRCC']))
+        SS5.append(np.std(results_dict[folder]['5'][split]['SRCC']))
+
+        MM1.append(np.average(results_dict[folder]['1'][split]['MAE']))
+        MM2.append(np.average(results_dict[folder]['2'][split]['MAE']))
+        MM3.append(np.average(results_dict[folder]['3'][split]['MAE']))
+        MM4.append(np.average(results_dict[folder]['4'][split]['MAE']))
+        MM5.append(np.average(results_dict[folder]['5'][split]['MAE']))
+
+        MS1.append(np.std(results_dict[folder]['1'][split]['MAE']))
+        MS2.append(np.std(results_dict[folder]['2'][split]['MAE']))
+        MS3.append(np.std(results_dict[folder]['3'][split]['MAE']))
+        MS4.append(np.std(results_dict[folder]['4'][split]['MAE']))
+        MS5.append(np.std(results_dict[folder]['5'][split]['MAE']))
+
 
     out_dict = {'Train Split':splits,
-                'SRCC_average':SRCC_mean,
-                'SRCC_stdev':SRCC_dev,
-                'MAE_average':MAE_mean,
-                'MAE_stdev':MAE_dev}
+                'T1_SRCC_mean':SM1,
+                'T2_SRCC_mean':SM2,
+                'T3_SRCC_mean':SM3,
+                'T4_SRCC_mean':SM4,
+                'T5_SRCC_mean':SM5,
+                'T1_SRCC_std':SS1,
+                'T2_SRCC_std':SS2,
+                'T3_SRCC_std':SS3,
+                'T4_SRCC_std':SS4,
+                'T5_SRCC_std':SS5,
+                'T1_MAE_mean':MM1,
+                'T2_MAE_mean':MM2,
+                'T3_MAE_mean':MM3,
+                'T4_MAE_mean':MM4,
+                'T5_MAE_mean':MM5,
+                'T1_MAE_std':MS1,
+                'T2_MAE_std':MS2,
+                'T3_MAE_std':MS3,
+                'T4_MAE_std':MS4,
+                'T5_MAE_std':MS5,
+                }
     
     df = pd.DataFrame(out_dict)
     df.to_csv('results/summary/' + folder + '.csv')
-'''
