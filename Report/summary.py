@@ -3,14 +3,14 @@ import numpy as np
 import scipy
 import os
 
-true_df = pd.read_csv('Data/visc/visc_test_data.csv')
+true_df = pd.read_csv('Data/cond/cond_test_data.csv')
 
 truths = true_df['target']
 T_labels = true_df['T']
 
 
-datasets = ['visc']
-splits = ['0.1','0.2','0.3','0.4', '0.5', '0.6','0.7']
+datasets = ['cond']
+splits = ['0.1','0.2','0.3','0.4', '0.5']
 T_index = ['1', '2', '3', '4', '5']
 results_dict = dict()
 
