@@ -10,7 +10,7 @@ T_labels = true_df['T']
 
 
 datasets = ['cond_transfer_from_vd']
-splits = ['0.1', '0.2']
+splits = ['0.1', '0.2', '0.3', '0.4']
 #splits = ['0.1','0.2','0.3','0.4', '0.5','0.6','0.7']
 T_index = ['1', '2', '3', '4', '5']
 results_dict = dict()
