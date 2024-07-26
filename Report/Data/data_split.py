@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-df = pd.read_csv('visc/all_visc_data.csv')
+df = pd.read_csv('hc/hydrocarbon_visc.csv')
 
 
 train_order = df['Train_order'].dropna()
@@ -9,7 +9,7 @@ train_order = df['Train_order'].dropna()
 smiles = df['smiles']
 temperature = df['temp_input']
 lnA = df['lnA_input']
-target = df['Eta_target']
+target = df['target']
 splits = df['splits']
 
 
@@ -53,4 +53,4 @@ for frac in train_fracs:
             
             new_df = pd.concat([new_df,row_to_append])
 
-    new_df.to_csv('visc/visc_' + str(frac) + '.csv')
+    new_df.to_csv('hc/hc_' + str(frac) + '.csv')
