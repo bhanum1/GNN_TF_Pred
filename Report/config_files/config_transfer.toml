@@ -1,0 +1,51 @@
+# PATH Variables
+config-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Config_Files/config_transfer.toml
+data-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Report/Data/cond/cond_0.4.csv
+output-dir = /home/bhanu/Documents/Chemprop_Models/
+model-frzn = /home/bhanu/Documents/best_model_files/viscosity/best_model/checkpoint.ckpt
+
+
+# Hyperparameters
+activation = SELU
+aggregation = sum
+aggregation-norm = 150
+ffn-num-layers = 1
+warmup-epochs = 1
+batch-size = 32
+message-hidden-dim = 1700
+depth = 3
+dropout = 0.0
+ffn-hidden-dim = 1700
+init-lr = 0.0000336
+max-lr = 0.000672
+final-lr = 0.0006
+epochs = 100
+frzn-ffn-layers = 0
+
+
+# GPU/CPU and other training stuff
+accelerator = gpu
+num-workers = 7
+devices = auto
+ensemble-size = 1
+
+
+
+# Don't Change
+target-columns = [target]
+smiles-columns = [smiles]
+splits-column = splits
+split = RANDOM
+split-sizes = [0.8, 0.1, 0.1]
+split-key-molecule = 0
+num-folds = 1
+data-seed = 0
+task-type = regression
+rxn-mode = REAC_DIFF
+multi-hot-atom-featurizer-mode = V2
+frzn-ffn-layers = 0
+multiclass-num-classes = 3
+v-kl = 0.0
+eps = 1e-08
+
+
