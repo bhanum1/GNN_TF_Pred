@@ -3,13 +3,6 @@ config-path = PATH to config file
 data-path = PATH to data as .csv
 output-dir = PATH to directory to store model
 
-
-#hpopt stuff
-raytune-num-samples = 1200
-hyperopt-n-initial-points = 600
-hpopt-save-dir = PATH to save hpopt results to
-search-parameter-keywords = all
-
 # Hyperparameters (options listed if discrete, otherwise set to default)
 activation = RELU / SELU / ELU / PRELU / LEAKYRELU
 aggregation = mean / sum / norm
@@ -24,7 +17,6 @@ ffn-hidden-dim = 300
 init-lr = 0.0001
 max-lr = 0.001
 final-lr = 0.0001
-loss_reg = 0.0
 epochs = 50
 
 # GPU/CPU and other training stuff
@@ -54,4 +46,5 @@ frzn-ffn-layers = 0
 multiclass-num-classes = 3
 v-kl = 0.0
 eps = 1e-08
+
 
