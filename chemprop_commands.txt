@@ -1,1 +1,0 @@
-chemprop train --config-path /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Config_Files/config.toml
