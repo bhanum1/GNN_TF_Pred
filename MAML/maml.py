@@ -13,7 +13,7 @@ from itertools import combinations
 import os
 import scipy
 from model import *
-from data import generate_data, get_loaders
+from MAML.BT_chemprop import generate_data, get_loaders
 
 
 datafile = "data/train_data.csv"
