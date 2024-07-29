@@ -128,19 +128,22 @@ def generate_data(csv):
         G_i, removed_i = removeSubgraph(molGraph, start_i, percent_i)
         G_j, removed_j = removeSubgraph(molGraph, start_j, percent_j)
         
-        mol_1, mol_2 = networkx_graph_to_mol(G_i), networkx_graph_to_mol(G_j)
+        mol_1 = networkx_graph_to_mol(G_i)
 
         mol_1.ClearComputedProps()
-        mol_2.ClearComputedProps()
+        
+        for atom in mol_1.GetAtoms():
+            atom.SetIsAromatic(False)
+        
+        Chem.SanitizeMol(mol_1)
         
         smi_a = Chem.MolToSmiles(mol_1)
-        smi_b = Chem.MolToSmiles(mol_2)
 
         smis_1.append(smi_a)
-        smis_2.append(smi_b)
+
+        print(Chem.MolFromSmiles(smi_a))
 
     data_1 = [data.MoleculeDatapoint.from_smi(smi, y) for smi, y in zip(smis_1, targets)]
-    data_2 = [data.MoleculeDatapoint.from_smi(smi, y) for smi, y in zip(smis_2, targets)]
 
     train_indices, val_indices, test_indices = data.make_split_indices(mols, "random", (0.8, 0.1, 0.1))
 
