@@ -63,11 +63,6 @@ def generate_data(csv, tasks, test=False):
         #create data
         task_data = [data.MoleculeDatapoint.from_smi(smi, y) for smi, y in zip(task_smis, task_targets)]
         
-        for d in task_data:
-            d.mol
-
-
-
         #split into train/val
         if not test:
             indices = list(range(len(task_smis)))
