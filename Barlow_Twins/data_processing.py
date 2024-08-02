@@ -148,7 +148,7 @@ def augment_smiles(smiles):
     i = random.sample(list(range(N)), 1)
 
     if mol is not None:
-        G_new, _ = subgraph(mol_to_networkx_graph(mol), i[0], 0.15)
+        G_new, _ = subgraph(mol_to_networkx_graph(mol), i[0], 0.25)
         modified_mol = networkx_graph_to_mol(G_new)
 
         if modified_mol and validate_mol(modified_mol):
@@ -166,6 +166,11 @@ def create_loaders(original_smiles, batch_size = 64, num_workers = 0):
         smis_1.append(aug_smi_1)
         smis_2.append(aug_smi_2)
 
+    for _ in range(3):
+        remove_duplicates(smis_1, smis_2, original_smiles)
+
+
+
     data_1, data_2 = [], []
     fail = 0
     for i in range(len(smis_1)):
@@ -179,7 +184,7 @@ def create_loaders(original_smiles, batch_size = 64, num_workers = 0):
         except:
             fail += 1
 
-    #print("Percent failed: ", 100 * fail/len(new_smiles_list))
+    #print("Percent failed: ", 100 * fail/len(data_1))
 
     indices = list(range(len(data_1)))
     random.shuffle(indices)
@@ -212,8 +217,33 @@ def create_loaders(original_smiles, batch_size = 64, num_workers = 0):
 # Example usage
 original_smiles = pd.read_csv('Barlow_Twins/dataset.csv')['smiles']
 
-new_smiles_list = []
-for smiles in original_smiles:
-    augmented_smiles = augment_smiles(smiles,)
+def remove_duplicates(smi1,smi2, smiles):
+    for i in range(len(smi1)):
+        if smi1[i] == smi2[i]:
+            smi1[i] = augment_smiles(smiles[i])
 
-    new_smiles_list.append(augmented_smiles)
+
+'''
+smi1, smi2 = [], []
+
+for smiles in original_smiles:
+    augmented_smiles = augment_smiles(smiles)
+    aug2 = augment_smiles(smiles)
+    smi1.append(augmented_smiles)
+    smi2.append(aug2)
+
+same = 0
+for i in range(len(smi1)):
+    if smi1[i] == smi2[i]:
+        same += 1
+print(same / len(smi1))
+
+for _ in range(3):
+    remove_duplicates(smi1, smi2, original_smiles)
+
+    same = 0
+    for i in range(len(smi1)):
+        if smi1[i] == smi2[i]:
+            same += 1
+    print(same / len(smi1))
+'''

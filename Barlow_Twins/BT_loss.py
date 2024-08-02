@@ -6,8 +6,9 @@ def BT_loss(A, B, loss_lambda):
     ''' A and B are the two represenations of augmented Data.
     loss_lambda is the regularization parameter.
     Returns the on_diag, off_diag and total loss'''
+    #print("Orig:", A[0], B[0])
     A_norm, B_norm = normalize(A), normalize(B)
-    #print(A_norm, B_norm)
+    #print("Normed:", A_norm[0], B_norm[0])
     C = cross_corr_matrix(A_norm, B_norm, A.shape[0])
     on_diag, off_diag, loss = cross_corr_matrix_loss(C, loss_lambda)
     return on_diag, off_diag, loss
@@ -38,6 +39,10 @@ def get_on_diag(C):
 # normalize across the columns
 def normalize(C):
     '''Normalize the columns of the matrix'''
+
+    #max_val = torch.max(C)
+    #C = C / max_val
+    #print("Mean and std ", torch.mean(C, dim=0, keepdim=True), torch.std(C, dim=0, keepdim=True))
     C = C - torch.mean(C, dim=0, keepdim=True)
     C = C / torch.std(C, dim=0, keepdim=True)
     return C
