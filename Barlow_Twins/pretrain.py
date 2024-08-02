@@ -15,7 +15,7 @@ batch_size = 64
 dropout = 0
 mp_1 = nn.BondMessagePassing(depth=3, dropout=dropout, d_h = 256, activation = 'leakyrelu')
 mp_2 = nn.BondMessagePassing(depth=3, dropout=dropout, d_h = 256, activation = 'leakyrelu') # Make the gnn
-ffn = nn.RegressionFFN(dropout=dropout) # regression head
+ffn = nn.RegressionFFN(dropout=dropout, input_dim = 256, hidden_dim = 256) # regression head
 agg = nn.MeanAggregation() # Aggregation type. Can also do SumAgg. or NormAgg.
 batch_norm = False
 
@@ -23,8 +23,8 @@ batch_norm = False
 mpnn_1 = models.MPNN(mp_1, agg, ffn, batch_norm, [nn.metrics.MSEMetric()])
 mpnn_2 = models.MPNN(mp_2, agg, ffn, batch_norm, [nn.metrics.MSEMetric()])
 
-opt1 = optim.SGD(mpnn_1.parameters(), lr = 0.0005)
-opt2 = optim.SGD(mpnn_2.parameters(), lr = 0.0005)
+opt1 = optim.SGD(mpnn_1.parameters(), lr = 0.0005, weight_decay=eval('5E-5'))
+opt2 = optim.SGD(mpnn_2.parameters(), lr = 0.0005, weight_decay=eval('5E-5'))
 
 
 input_path = 'Barlow_Twins/dataset.csv' # path to your data .csv file
@@ -70,8 +70,15 @@ for epoch in range(epochs):
         r_2 = mpnn_2.message_passing.forward(bmg_2)
         r_2 = agg.forward(r_2, bmg_2.batch)
 
+        
+
         on_diag, off_diag, loss = BT_loss(r_1, r_2, [1, 0.005])
         loss.backward()
+
+        torch.nn.utils.clip_grad_norm_(mpnn_1.parameters(), 1)
+        torch.nn.utils.clip_grad_norm_(mpnn_2.parameters(), 1)
+
+
         opt1.step()
         opt2.step()
 
@@ -79,7 +86,7 @@ for epoch in range(epochs):
         on_diag_sum+= on_diag
         off_diag_sum += off_diag
 
-
+    print(torch.max(r_1))
 
 
     val_loss = 0
@@ -122,7 +129,7 @@ for epoch in range(epochs):
 
 
     if val_loss < best_val_loss:
-        torch.save(mpnn_1.state_dict(), 'BT.ckpt')
+        torch.save({"hyper_parameters": mpnn_1.hparams, "state_dict": mpnn_1.state_dict()}, 'BT.ckpt')
         best_val_loss = val_loss
 
 loss_curve = {"Train_loss":losses, "Val_loss":val_losses, "On_diag":on_diag_losses, "Off_diag":off_diag_losses}
