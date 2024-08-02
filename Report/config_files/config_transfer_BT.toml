@@ -1,6 +1,6 @@
 # PATH Variables
 config-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Config_Files/config_transfer.toml
-data-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Report/Data/cond/cond_0.1.csv
+data-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Report/Data/cond/cond_0.3.csv
 output-dir = /home/bhanu/Documents/Chemprop_Models/
 model-frzn = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Barlow_Twins/BT_best.ckpt
 
@@ -20,7 +20,6 @@ init-lr = 0.0001
 max-lr = 0.001
 final-lr = 0.0001
 epochs = 100
-frzn-ffn-layers = 0
 
 
 # GPU/CPU and other training stuff
