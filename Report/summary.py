@@ -3,13 +3,16 @@ import numpy as np
 import scipy
 import os
 
-true_df = pd.read_csv('Data/cond/cond_test_data.csv')
+true_df = pd.read_csv('Data/visc/visc_test_data.csv')
 
 truths = true_df['target']
 T_labels = true_df['T']
 
+cond_std = 0.2986613
+visc_std = 1.22815428354341
+std = visc_std
 
-datasets = ['BT_cond']
+datasets = ['visc']
 splits = ['0.1','0.2' ,'0.3' ,'0.4', '0.5' ,'0.6','0.7']
 T_index = ['1', '2', '3', '4', '5']
 results_dict = dict()
@@ -41,7 +44,7 @@ for folder in datasets: #each dataset
                 truths_T = truths[T_labels == int(T)]
 
                 
-                results_dict[folder][T][split]['MAE'].append(round(np.average(abs(truths_T - preds)),5))
+                results_dict[folder][T][split]['MAE'].append(round(np.average(abs(truths_T * std - preds * std)),5))
                 results_dict[folder][T][split]['SRCC'].append(round(scipy.stats.spearmanr(truths_T, preds)[0],5))
 
 SM1,SM2,SM3,SM4,SM5 = [],[],[],[],[]
