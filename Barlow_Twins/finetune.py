@@ -7,6 +7,7 @@ from BT_loss import BT_loss
 from rdkit import RDLogger
 from plots import plot_losses
 from torch.optim.lr_scheduler import CosineAnnealingLR
+import pandas as pd
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -18,14 +19,9 @@ batch_norm = False
 
 #initialize the model
 mpnn = models.MPNN(mp, agg, ffn, batch_norm, [nn.metrics.MSEMetric()])
-
-
-
 opt1 = optim.SGD(mpnn.parameters(), lr = 0.0005)
 
-
-input_path = 'Barlow_Twins/dataset.csv' # path to your data .csv file
-df = pd.read_csv(input_path) #convert to dataframe
+mpnn = mpnn.load_from_file('/home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Barlow_Twins/BT_big.ckpt')
 
 
 
@@ -64,24 +60,47 @@ train_dset = make_dataset(train_data, reaction_mode='REAC_PROD')
 val_dset = make_dataset(val_data,reaction_mode='REAC_PROD')
 test_dset = make_dataset(test_data, reaction_mode='REAC_PROD')
 
-train_loader = data.build_dataloader(train_dset, batch_size=batch_size, num_workers=num_workers, shuffle = False)
+train_loader = data.build_dataloader(train_dset, batch_size=1, num_workers=num_workers, shuffle = False)
 val_loader = data.build_dataloader(val_dset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
 test_loader = data.build_dataloader(test_dset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
-
 
 best_val_loss = float('inf')
 criterion = torch.nn.MSELoss(reduction='mean')
 epochs = 100
 
-for epoch in range(epochs):
+for model in range(10):
+    for epoch in range(epochs):
+        train_loss = 0
+        for batch in train_loader:
+            bmg, V_d, X_d, targets, weights, lt_mask, gt_mask, temps, lnA_targets, EaR_targets = batch
 
-    train_loss = 0
+            pred = mpnn(bmg)
+            l = criterion(pred, targets, None, weights, lt_mask, gt_mask, temps, lnA_targets, EaR_targets)
+
+            train_loss += l.item()
+            l.backward()
+            opt1.step()
+        
+        val_loss = 0
+        for batch in val_loader:
+            bmg, V_d, X_d, targets, weights, lt_mask, gt_mask, temps, lnA_targets, EaR_targets = batch
+
+            pred = mpnn(bmg)
+            l = criterion(pred, targets, None, weights, lt_mask, gt_mask, temps, lnA_targets, EaR_targets)
+
+            val_loss += l.item()
+
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            torch.save({"hyper_parameters": mpnn.hparams, "state_dict": mpnn.state_dict()}, '/home/bhanu/Documents/temp_models/m' + str(model) + '.ckpt')
+        
+        print(train_loss,val_loss)
+
+
+for model in range(10):
+    mpnn = mpnn.load_from_file('/home/bhanu/Documents/temp_models/m' + str(model) + '.ckpt')
     for batch in train_loader:
         bmg, V_d, X_d, targets, weights, lt_mask, gt_mask, temps, lnA_targets, EaR_targets = batch
 
         pred = mpnn(bmg)
-        l = criterion(pred, targets, temps = temps, lnA_targets = lnA_targets)
-
-        train_loss += l.item()
-
-    print(train_loss)
+        print(pred)

@@ -1,26 +1,26 @@
 # PATH Variables
 config-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Config_Files/config_transfer.toml
-data-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Report/Data/cond/cond_0.7.csv
+data-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Report/Data/cond/cond_0.1.csv
 output-dir = /home/bhanu/Documents/Chemprop_Models/
-model-frzn = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Barlow_Twins/BT_best.ckpt
+model-frzn = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Barlow_Twins/BT_big.ckpt
 
 
 # Hyperparameters
 activation = leakyrelu
 aggregation = mean
 aggregation-norm = 100
-ffn-num-layers = 2
+ffn-num-layers = 1
 warmup-epochs = 2
 batch-size = 64
-message-hidden-dim = 256
+message-hidden-dim = 700
 depth = 3
-dropout = 0.0
-ffn-hidden-dim = 256
+dropout = 0.3
+ffn-hidden-dim = 1000
 init-lr = 0.0001
 max-lr = 0.001
 final-lr = 0.0001
 epochs = 100
-
+loss_reg = 0.15
 
 # GPU/CPU and other training stuff
 accelerator = gpu

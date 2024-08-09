@@ -12,10 +12,10 @@ RDLogger.DisableLog('rdApp.*')
 batch_size = 64
 
 #Create the network
-dropout = 0
-mp_1 = nn.BondMessagePassing(depth=3, dropout=dropout, d_h = 256, activation = 'leakyrelu')
-mp_2 = nn.BondMessagePassing(depth=3, dropout=dropout, d_h = 256, activation = 'leakyrelu') # Make the gnn
-ffn = nn.RegressionFFN(dropout=dropout, input_dim = 256, hidden_dim = 256) # regression head
+dropout = 0.15
+mp_1 = nn.BondMessagePassing(depth=3, dropout=dropout, d_h = 700, activation = 'selu')
+mp_2 = nn.BondMessagePassing(depth=3, dropout=dropout, d_h = 700, activation = 'selu') # Make the gnn
+ffn = nn.RegressionFFN(dropout=dropout, input_dim = 700, hidden_dim = 1000, n_layers=1) # regression head
 agg = nn.MeanAggregation() # Aggregation type. Can also do SumAgg. or NormAgg.
 batch_norm = False
 
