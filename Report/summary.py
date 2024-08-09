@@ -12,7 +12,7 @@ cond_std = 0.2986613
 visc_std = 1.22815428354341
 std = cond_std
 
-datasets = ['BT_cond']
+datasets = ['BT_big']
 splits = ['0.1','0.2' ,'0.3' ,'0.4', '0.5' ,'0.6','0.7']
 T_index = ['1', '2', '3', '4', '5']
 results_dict = dict()
@@ -104,5 +104,3 @@ for folder in datasets:
     
     df = pd.DataFrame(out_dict)
     df.to_csv('results/summary/' + folder + '.csv')
-
-print(results_dict['BT_cond']['3']['0.7']['MAE'])
