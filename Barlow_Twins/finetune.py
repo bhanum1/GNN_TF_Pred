@@ -21,28 +21,30 @@ batch_size = 64
 num_workers = 0
 
 
+progress = 0
 
-epochs = 1
+epochs = 100
 
 folders = ['0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7']
 
+max_progress = len(folders)*10*100
 for folder in folders:
     input_path = '/home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Report/Data/cond/cond_' + folder +  '.csv' # path to your data .csv file
     df = pd.read_csv(input_path) #convert to dataframe
 
     for model in range(10):
         dropout = 0
-        mp = nn.BondMessagePassing(depth=3, dropout=dropout, d_h = 700, activation = 'leakyrelu')
-        ffn = nn.RegressionFFN(dropout=dropout, input_dim = 700, hidden_dim = 1000, n_layers = 1) # regression head
+        mp = nn.BondMessagePassing(depth=3, dropout=dropout, d_h = 256, activation = 'leakyrelu')
+        ffn = nn.RegressionFFN(dropout=dropout, input_dim = 256, hidden_dim = 256, n_layers = 1) # regression head
         agg = nn.MeanAggregation() # Aggregation type. Can also do SumAgg. or NormAgg.
         batch_norm = False
 
         #initialize the model
         mpnn = models.MPNN(mp, agg, ffn, batch_norm, [nn.metrics.MSEMetric()])
 
-        mpnn = mpnn.load_from_file('/home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Barlow_Twins/BT_best.ckpt')
+        #mpnn = mpnn.load_from_file('/home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Barlow_Twins/BT_big.ckpt')
         mpnn.to(device)
-        opt1 = optim.Adam(mpnn.parameters(), lr = 0.000005)
+        opt1 = optim.Adam(mpnn.parameters(), lr = 0.00001)
 
         criterion = mpnn.predictor.criterion
 
@@ -80,6 +82,7 @@ for folder in folders:
         best_val_loss = float('inf')
 
         for epoch in range(epochs):
+            progress += 1
             train_loss = 0
             for batch in train_loader:
                 bmg, V_d, X_d, targets, weights, lt_mask, gt_mask, temps, lnA_targets, EaR_targets = batch
@@ -118,8 +121,9 @@ for folder in folders:
                 best_val_loss = val_loss
                 torch.save({"hyper_parameters": mpnn.hparams, "state_dict": mpnn.state_dict()}, '/home/bhanu/Documents/temp_models/m' + str(model) + '.ckpt')
             
-            print(epoch, train_loss,val_loss)
-
+            #print(epoch, train_loss,val_loss)
+            if (progress / max_progress) % 0.01 == 0:
+                print(progress/max_progress)
 
     for model in range(10):
         mpnn = mpnn.load_from_file('/home/bhanu/Documents/temp_models/m' + str(model) + '.ckpt')
@@ -132,3 +136,4 @@ for folder in folders:
             out = pd.DataFrame(combined_array, columns=['lnA', 'EaR', 'temperature'])
 
             out.to_csv('/home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Report/results/BT_big/' + folder + '_preds/m' + str(model) + '.csv')
+

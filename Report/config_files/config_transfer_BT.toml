@@ -1,12 +1,12 @@
 # PATH Variables
 config-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Config_Files/config_transfer.toml
-data-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Report/Data/cond/cond_0.1.csv
+data-path = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Report/Data/cond/cond_0.7.csv
 output-dir = /home/bhanu/Documents/Chemprop_Models/
 model-frzn = /home/bhanu/Documents/GitHub/Thermal_Fluid_Prediction_GNN/Barlow_Twins/BT_big.ckpt
 
 
 # Hyperparameters
-activation = leakyrelu
+activation = selu
 aggregation = mean
 aggregation-norm = 100
 ffn-num-layers = 1
