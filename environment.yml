@@ -1,43 +1,85 @@
 name: chemprop_git
 channels:
-  - ibmdecisionoptimization
-  - defaults
   - conda-forge
+  - defaults
 dependencies:
+  - _libgcc_mutex=0.1
+  - _openmp_mutex=4.5
+  - asttokens=2.4.1
   - bzip2=1.0.8
   - c-ares=1.19.1
-  - ca-certificates=2024.3.11
+  - ca-certificates=2024.7.4
+  - comm=0.2.2
   - curl=8.7.1
+  - debugpy=1.6.7
+  - decorator=5.1.1
+  - exceptiongroup=1.2.2
+  - executing=2.0.1
   - expat=2.6.2
   - gdbm=1.18
   - gettext=0.21.0
   - git=2.40.1
   - icu=73.1
+  - importlib-metadata=8.2.0
+  - importlib_metadata=8.2.0
+  - ipykernel=6.29.5
+  - ipython=8.26.0
+  - jedi=0.19.1
+  - jupyter_client=8.6.2
+  - jupyter_core=5.7.2
   - krb5=1.20.1
+  - ld_impl_linux-64=2.38
   - libcurl=8.7.1
   - libcxx=14.0.6
+  - libcxxabi=14.0.6
   - libedit=3.1.20230828
   - libev=4.33
   - libffi=3.4.4
+  - libgcc-ng=14.1.0
+  - libgomp=14.1.0
   - libiconv=1.16
   - libnghttp2=1.57.0
+  - libsodium=1.0.18
   - libssh2=1.11.0
+  - libstdcxx-ng=11.2.0
+  - libuuid=1.41.5
   - libxml2=2.10.4
   - llvm-openmp=14.0.6
+  - matplotlib-inline=0.1.7
   - ncurses=6.4
-  - openssl=3.0.13
+  - nest-asyncio=1.6.0
+  - openssl=3.3.1
+  - parso=0.8.4
   - pcre2=10.42
   - perl=5.34.0
+  - pexpect=4.9.0
+  - pickleshare=0.7.5
   - pip=24.0
+  - platformdirs=4.2.2
+  - prompt-toolkit=3.0.47
+  - ptyprocess=0.7.0
+  - pure_eval=0.2.3
+  - pygments=2.18.0
   - python=3.11.9
+  - python_abi=3.11
+  - pyzmq=25.1.2
   - readline=8.2
   - setuptools=69.5.1
+  - six=1.16.0
   - sqlite=3.45.3
+  - stack_data=0.6.2
   - tk=8.6.14
+  - tornado=6.4.1
+  - traitlets=5.14.3
+  - typing_extensions=4.12.2
+  - wcwidth=0.2.13
   - wheel=0.43.0
   - xz=5.4.6
+  - zeromq=4.3.5
+  - zipp=3.19.2
   - zlib=1.2.13
   - pip:
+      - absl-py==2.1.0
       - aimsim-core==2.2.1
       - aiohttp==3.9.5
       - aiohttp-cors==0.7.0
@@ -54,16 +96,22 @@ dependencies:
       - cloudpickle==3.0.0
       - colorful==0.5.6
       - configargparse==1.7
+      - contourpy==1.2.1
+      - cycler==0.12.1
       - dill==0.3.8
       - distlib==0.3.8
       - dnspython==2.6.1
+      - docker-pycreds==0.4.0
       - email-validator==2.1.1
       - fastapi==0.111.0
       - fastapi-cli==0.0.4
       - filelock==3.14.0
+      - fonttools==4.53.0
       - frozenlist==1.4.1
       - fsspec==2024.6.0
       - future==1.0.0
+      - gitdb==4.0.11
+      - gitpython==3.1.43
       - google-api-core==2.19.0
       - google-auth==2.30.0
       - googleapis-common-protos==1.63.1
@@ -78,11 +126,14 @@ dependencies:
       - joblib==1.4.2
       - jsonschema==4.22.0
       - jsonschema-specifications==2023.12.1
+      - kiwisolver==1.4.5
       - lightning==2.2.5
       - lightning-utilities==0.11.2
       - linkify-it-py==2.0.3
+      - markdown==3.6
       - markdown-it-py==3.0.0
       - markupsafe==2.1.5
+      - matplotlib==3.9.0
       - mdit-py-plugins==0.4.1
       - mdurl==0.1.2
       - memray==1.12.0
@@ -94,6 +145,18 @@ dependencies:
       - multiprocess==0.70.16
       - networkx==3.3
       - numpy==1.26.4
+      - nvidia-cublas-cu12==12.1.3.1
+      - nvidia-cuda-cupti-cu12==12.1.105
+      - nvidia-cuda-nvrtc-cu12==12.1.105
+      - nvidia-cuda-runtime-cu12==12.1.105
+      - nvidia-cudnn-cu12==8.9.2.26
+      - nvidia-cufft-cu12==11.0.2.54
+      - nvidia-curand-cu12==10.3.2.106
+      - nvidia-cusolver-cu12==11.4.5.107
+      - nvidia-cusparse-cu12==12.1.0.106
+      - nvidia-nccl-cu12==2.20.5
+      - nvidia-nvjitlink-cu12==12.5.40
+      - nvidia-nvtx-cu12==12.1.105
       - opencensus==0.11.4
       - opencensus-context==0.1.3
       - orjson==3.10.3
@@ -101,7 +164,6 @@ dependencies:
       - padelpy==0.1.16
       - pandas==2.2.2
       - pillow==10.3.0
-      - platformdirs==4.2.2
       - prometheus-client==0.20.0
       - proto-plus==1.23.0
       - protobuf==4.25.3
@@ -113,7 +175,7 @@ dependencies:
       - pyasn1-modules==0.4.0
       - pydantic==2.7.3
       - pydantic-core==2.18.4
-      - pygments==2.18.0
+      - pyparsing==3.1.2
       - python-dateutil==2.9.0.post0
       - python-dotenv==1.0.1
       - python-multipart==0.0.9
@@ -129,19 +191,24 @@ dependencies:
       - rsa==4.9
       - scikit-learn==1.5.0
       - scipy==1.13.1
+      - sentry-sdk==2.5.1
+      - setproctitle==1.3.3
       - shellingham==1.5.4
-      - six==1.16.0
       - smart-open==7.0.4
+      - smmap==5.0.1
       - sniffio==1.3.1
       - starlette==0.37.2
       - sympy==1.12.1
       - tabulate==0.9.0
+      - tensorboard==2.17.0
+      - tensorboard-data-server==0.7.2
       - tensorboardx==2.6.2.2
       - textual==0.66.0
       - threadpoolctl==3.5.0
       - torch==2.3.0
       - torchmetrics==1.4.0.post0
       - tqdm==4.66.4
+      - triton==2.3.0
       - typer==0.12.3
       - typing-extensions==4.12.1
       - tzdata==2024.1
@@ -151,8 +218,10 @@ dependencies:
       - uvicorn==0.30.1
       - uvloop==0.19.0
       - virtualenv==20.26.2
+      - wandb==0.17.1
       - watchfiles==0.22.0
       - websockets==12.0
+      - werkzeug==3.0.3
       - wrapt==1.16.0
       - yarl==1.9.4
-prefix: /Users/bhanumamillapalli/miniconda3/envs/chemprop_git
+prefix: /home/bhanu/miniconda3/envs/chemprop_git
