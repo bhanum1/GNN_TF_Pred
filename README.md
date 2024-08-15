@@ -3,7 +3,7 @@ Collection of my work during Summer 2024 for the AI4ChemS Lab at the University 
 
 
 ## Installation
-First, run pip install git+https://github.com/bhanum1/chemprop.git to install the modified version of chemprop used in the code found in this repository.
+First, run pip install git+https://github.com/bhanum1/chemprop.git to install the modified version of Chemprop used in the code found in this repository.
 
 Then create conda environment using the provided environment.yml file.
 
