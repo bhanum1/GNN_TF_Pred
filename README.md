@@ -17,6 +17,11 @@ The MAML folder contains models, data, and results from the attempted usage of M
 
 Finally, the Barlow_Twins and Report folders were made in collaboration with Hari Om Chadha, and represent our combined efforts to use pretraining and transfer learning to improve performance.
 
+To train a model, first install the environment file in a conda environment, then run train.ipynb in that environment, which will train a default GNN model on the viscosity dataset. Hyperparameters can be changed as well.
+
+
+
+
 
 
 
